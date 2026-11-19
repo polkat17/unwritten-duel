@@ -68,6 +68,11 @@ html[lang=ru] .float{font-size:clamp(9px,2.8vw,14px)}
 .coderow{display:flex;flex-direction:column;gap:6px}
 .coderow input{flex:1 1 140px;min-width:0;background:var(--slate);border:1px solid var(--line);border-radius:3px;padding:11px 12px;font:400 17px var(--body)}
 .coderow .btn{padding:11px 14px}
+.keyhelp ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.keyhelp a{color:var(--chalk)}
+.keyhelp code{font-family:monospace;color:var(--chalk)}
+.keyline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--dust);font-size:13px}
+.keyline .btn{padding:6px 10px}
 .langrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .langrow button{background:transparent;border:1px solid var(--line);border-radius:2px;padding:6px 10px;cursor:pointer;color:var(--dust)}
 .langrow button[aria-pressed="true"]{border-color:var(--chalk);color:var(--chalk)}
@@ -199,7 +204,8 @@ details .body b{color:var(--chalk);font-weight:500}
     <div class="langrow px"><span class="label" data-t="language">Language</span><button data-act="setlang" data-v="en" id="lgEn">English</button><button data-act="setlang" data-v="ru" id="lgRu">Русский</button></div>
     <p class="lede" data-t="lede">You have no spellbook. Write any spell you can imagine and it is cast at once. Floods, fire, storms and roots stay on the battlefield, and the next spell that uses them can end the duel.</p>
     <div class="row"><button class="btn wide" data-act="run" id="runBtn" data-t="begin">Begin the climb</button></div>
-    <div class="coderow" id="codeHome" hidden><label class="px label" for="codeIn1" data-t="codeLabel">Passcode for written spells</label><div class="row"><input id="codeIn1" type="password" autocomplete="off" inputmode="text"><button class="btn ghost" data-act="code" data-v="codeIn1" data-t="codeSave">Save</button></div></div>
+    <div class="coderow" id="codeHome" hidden><label class="px label" for="codeIn1" data-t="codeLabel">Your free AI key or the family passcode</label><div class="row"><input id="codeIn1" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"><button class="btn ghost" data-act="code" data-v="codeIn1" data-t="codeSave">Save</button></div><details class="keyhelp" open><summary class="px" data-t="keyHow">How to get a free key</summary><div class="body keyHelpBody"></div></details></div>
+    <div class="keyline" id="keyLine" hidden><span id="keyWho"></span><button class="btn ghost" data-act="forgetkey" data-t="keyChange">Change</button></div>
     <p class="note" id="homeNote"></p>
     <p class="label px" data-t="sanctum">Sanctum · spend motes on lasting power</p>
     <div class="cards" id="shop"></div>
@@ -219,7 +225,7 @@ details .body b{color:var(--chalk);font-weight:500}
   <section id="duel" class="panel" hidden>
     <div class="desk" id="desk">
       <div class="panel" id="pCast">
-        <div class="coderow" id="codeDesk" hidden><label class="px label" for="codeIn2" data-t="codeLabel">Passcode for written spells</label><div class="row"><input id="codeIn2" type="password" autocomplete="off" inputmode="text"><button class="btn ghost" data-act="code" data-v="codeIn2" data-t="codeSave">Save</button></div></div>
+        <div class="coderow" id="codeDesk" hidden><label class="px label" for="codeIn2" data-t="codeLabel">Your free AI key or the family passcode</label><div class="row"><input id="codeIn2" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"><button class="btn ghost" data-act="code" data-v="codeIn2" data-t="codeSave">Save</button></div><details class="keyhelp"><summary class="px" data-t="keyHow">How to get a free key</summary><div class="body keyHelpBody"></div></details></div>
         <textarea id="spell" maxlength="320" enterkeyhint="send" aria-label="Your spell"></textarea>
         <p class="note" id="castNote" style="min-height:2.8em"></p>
         <div class="panel" style="gap:6px" id="bookWrap"><p class="px label" data-t="grimoire">Your grimoire · tap to recast</p><div class="book" id="book"></div></div>
@@ -271,6 +277,9 @@ details .body b{color:var(--chalk);font-weight:500}
      virtual clock A.vt, anime cut-ins, impact frames) that the player can save. Animations must read time from A.vt, never performance.now().
    - Two homes: the Claude artifact, and an ordinary website on the owner's Vercel (project "unwritten-duel") where WEB is true and
      written spells go to /api/referee (owner's API key, passcode). Keep both paths working; never put a key in this file.
+     A player may instead save their OWN key (OpenRouter sk-or-, Gemini AIza, Claude sk-ant-) in localStorage "ud.key"; it goes from their
+     browser straight to that service (KEY_CALL), never to /api/referee. OpenRouter's free router (openrouter/free) is the free path that
+     works from Russia; keep the RU/EN step-by-step key help (TX keyHelp) accurate.
    - Drop-in art: PNG sheets published as art/<id>.png replace the drawn
      sprites (see ART below for the frame layout). Never delete art files.
    DIRECTION FROM THE PLAYER:
@@ -304,6 +313,7 @@ details .body b{color:var(--chalk);font-weight:500}
     10. Reaction codex: the sanctum shows every reaction from REACTIONS as a silhouette until the player first triggers it, then its name and pixel effect (saved as a new M field with a default in newMeta()).
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-19",t:"On the website you can now use your own free AI key for written spells instead of the family passcode, with step-by-step help on getting one from OpenRouter for free.",ru:"На сайте теперь можно писать заклинания со своим бесплатным ключом ИИ вместо семейного пароля. Есть пошаговая инструкция, как бесплатно получить ключ OpenRouter."},
   {d:"2026-11-19",t:"Every duel now ends with a finale: its last moves replay as a short anime-style film, with slow motion, a cut-in for every spell and a closing title, and you can save it to share. The game speaks Russian too: choose the language on the home screen or with the RU/EN chip. Life and mana now sit on the arena, and the Cast and Keep channelling button sits right under it.",ru:"Каждая дуэль теперь заканчивается финалом: последние ходы проигрываются как короткий фильм в стиле аниме, с замедлением, вставкой на каждое заклинание и финальным титром, и его можно сохранить и отправить. Игра теперь говорит по-русски: выберите язык на главном экране или кнопкой RU/EN. Жизнь и мана теперь показаны прямо на арене, а кнопка «Колдовать» и «Продолжать подготовку» — сразу под ней."},
   {d:"2026-11-19",t:"Conditions now react with each other: use two at once and the arena plays Chain Lightning along a flood, a Freezing Wave, a Firestorm, Wildfire racing through roots, an Eclipse and more, each with its own animation and sound. Early rivals are a touch less sturdy."},
   {d:"2026-11-18",t:"Every spell you write now has its own animation and colours: meteors, lightning from the sky, chains, vortices, pillars of fire, swarms and more, chosen from your words. The screen no longer shakes, and the page holds still between turns."},
@@ -790,7 +800,13 @@ Object.assign(TX.en,{
   finalMoves:"Final moves",victory:"Victory",defeat:"Defeat",skip:"Skip",watchFinale:"Watch the finale",saveVideo:"Save the video",
   recording:"Recording the finale…",noRecord:"This browser can't record the finale, but you can still watch it.",videoReady:"The finale is ready to save and share.",
   saved:"Saved.",noSave:"Saving isn't available here.",vsLine:(f,r)=>"Floor "+f+" · You vs "+r,newsEn:"",
-  codeLabel:"Passcode for written spells",codeSave:"Save",codeNeeded:"Enter the passcode to write spells. Your grimoire and the quick sigils work without it.",
+  codeLabel:"Your free AI key or the family passcode",codeSave:"Save",codeNeeded:"Written spells need a referee: paste your free AI key (see how to get one below) or the family passcode. Your grimoire and the quick sigils work without it.",
+  keyHow:"How to get a free key (about 5 minutes)",keyChange:"Change",keySaved:"Key saved on this device. Write your spells!",
+  keyWho:k=>k==="openrouter"?"Spells are judged with your free OpenRouter key.":k==="gemini"?"Spells are judged with your Google Gemini key.":k==="anthropic"?"Spells are judged with your Claude key.":"Spells are judged with the family passcode.",
+  keyOther:"That looks like a key from a service the game can't use. Use a free OpenRouter key (starts with sk-or-) instead.",
+  errKey:"The AI service didn't accept this key. Copy it again and paste it here.",errKeyRegion:"This AI service doesn't work from your country. Get a free OpenRouter key instead (see how below).",
+  errKeyCredit:"The key's account has a negative balance. Check it on openrouter.ai.",errRateKey:"The free key's limit is reached for now. Wait a minute, or come back tomorrow. Quick sigils still work.",
+  keyHelp:`<ol><li>Open <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a> and press <b>Sign up</b> (top right). Sign up with your email or a Google account. It's free and needs no card.</li><li>Open the keys page: <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> (or the menu at the top right, then <b>Keys</b>).</li><li>Press <b>Create</b> (Create API key), type any name, for example <b>duel</b>, and confirm.</li><li>A long key appears that starts with <code>sk-or-</code>. Press the copy button next to it. It is shown only once.</li><li>Come back here, paste the key into the box above and press <b>Save</b>.</li></ol><p>The key stays only on this device and goes only to OpenRouter. Don't send it to anyone. Free use allows about 50 spells a day; if you see "limit reached", wait a minute.</p><p>A Google Gemini key (starts with <code>AIza</code>, from aistudio.google.com/apikey) works too, but Google doesn't give them out in Russia.</p>`,
   errCode:"That passcode isn't right. Check it and enter it again.",errSetup:"The game's spell referee isn't set up yet. Your grimoire and the quick sigils still work.",
   codeSaved:"Passcode saved on this device.",shareTitle:"The Unwritten Duel"
 });
@@ -839,7 +855,13 @@ Object.assign(TX.ru,{
   finalMoves:"Финальные ходы",victory:"Победа",defeat:"Поражение",skip:"Пропустить",watchFinale:"Смотреть финал",saveVideo:"Сохранить видео",
   recording:"Финал записывается…",noRecord:"Этот браузер не умеет записывать финал, но посмотреть его можно.",videoReady:"Финал готов — сохраните его и поделитесь.",
   saved:"Сохранено.",noSave:"Сохранение здесь недоступно.",vsLine:(f,r)=>"Этаж "+f+" · Вы против: "+r,
-  codeLabel:"Пароль для написанных заклинаний",codeSave:"Сохранить",codeNeeded:"Введите пароль, чтобы писать заклинания. Гримуар и быстрые знаки работают и без него.",
+  codeLabel:"Ваш бесплатный ключ ИИ или семейный пароль",codeSave:"Сохранить",codeNeeded:"Написанным заклинаниям нужен судья: вставьте свой бесплатный ключ ИИ (как его получить — ниже) или семейный пароль. Гримуар и быстрые знаки работают и без него.",
+  keyHow:"Как получить бесплатный ключ (около 5 минут)",keyChange:"Сменить",keySaved:"Ключ сохранён на этом устройстве. Пишите заклинания!",
+  keyWho:k=>k==="openrouter"?"Заклинания судит ваш бесплатный ключ OpenRouter.":k==="gemini"?"Заклинания судит ваш ключ Google Gemini.":k==="anthropic"?"Заклинания судит ваш ключ Claude.":"Заклинания судит семейный пароль.",
+  keyOther:"Похоже, это ключ от сервиса, с которым игра не работает. Возьмите бесплатный ключ OpenRouter (начинается с sk-or-).",
+  errKey:"Сервис ИИ не принял этот ключ. Скопируйте его ещё раз и вставьте сюда.",errKeyRegion:"Этот сервис ИИ не работает из вашей страны. Возьмите бесплатный ключ OpenRouter (как — ниже).",
+  errKeyCredit:"На счёте этого ключа отрицательный баланс. Проверьте его на openrouter.ai.",errRateKey:"Бесплатный лимит ключа пока исчерпан. Подождите минуту или вернитесь завтра. Быстрые знаки работают.",
+  keyHelp:`<ol><li>Откройте сайт <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a> и нажмите <b>Sign up</b> (вверху справа). Зарегистрируйтесь по почте или через аккаунт Google. Это бесплатно, банковская карта не нужна.</li><li>Откройте страницу ключей: <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> (или меню вверху справа, затем <b>Keys</b>).</li><li>Нажмите <b>Create</b> (создать ключ), впишите любое имя, например <b>duel</b>, и подтвердите.</li><li>Появится длинный ключ, который начинается с <code>sk-or-</code>. Нажмите кнопку копирования рядом с ним. Его покажут только один раз.</li><li>Вернитесь сюда, вставьте ключ в поле выше и нажмите <b>Сохранить</b>.</li></ol><p>Ключ хранится только на этом устройстве и уходит только в OpenRouter. Никому его не пересылайте. Бесплатно — около 50 заклинаний в день; если увидите «лимит исчерпан», подождите минуту.</p><p>Ключ Google Gemini (начинается с <code>AIza</code>, сайт aistudio.google.com/apikey) тоже подойдёт, но в России Google такие ключи не выдаёт.</p>`,
   errCode:"Пароль неверный. Проверьте и введите снова.",errSetup:"Судья заклинаний ещё не настроен. Гримуар и быстрые знаки работают.",
   codeSaved:"Пароль сохранён на этом устройстве.",shareTitle:"Ненаписанная дуэль"
 });
@@ -883,7 +905,39 @@ const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const WEB=!IN_CLAUDE&&/^https?:$/.test(location.protocol);
 function storedCode(){try{return localStorage.getItem("ud.code")||"";}catch(e){return "";}}
 function parseLoose(t){t=String(t||"").trim();try{return JSON.parse(t);}catch(e){}const m=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(m){try{return JSON.parse(m[1]);}catch(e){}}const a=t.indexOf("{"),b=t.lastIndexOf("}");if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch(e){}}throw {code:"invalid_json"};}
+function storedKey(){try{return localStorage.getItem("ud.key")||"";}catch(e){return "";}}
+function keyKind(k){k=k===undefined?storedKey():k;return /^sk-or-/.test(k)?"openrouter":/^AIza/.test(k)?"gemini":/^sk-ant-/.test(k)?"anthropic":"";}
+function canReferee(){return !!(keyKind()||storedCode());}
+/* A player's own key goes from their browser straight to that AI service; it is never sent to our server. */
+const KEY_SYS="You referee a game. Reply with only one JSON object and no other text.";
+async function postJSON(url,headers,body){
+  let r;try{r=await fetch(url,{method:"POST",headers:Object.assign({"content-type":"application/json"},headers),body:JSON.stringify(body)});}catch(e){throw {code:"upstream_error"};}
+  let j={};try{j=await r.json();}catch(e){}
+  if(r.ok) return j;
+  const msg=JSON.stringify(j).toLowerCase();
+  if(r.status===429) throw {code:"key_rate"};
+  if(r.status===402) throw {code:"key_credit"};
+  if(/location|region|country|not supported in your|unsupported_country/.test(msg)) throw {code:"key_region"};
+  if(r.status===401||r.status===403||(r.status===400&&/api.?key/.test(msg))){T.needCode=true;throw {code:"bad_key"};}
+  throw {code:"upstream_error"};
+}
+const KEY_CALL={
+  openrouter:async(k,prompt)=>{const j=await postJSON("https://openrouter.ai/api/v1/chat/completions",{authorization:"Bearer "+k,"x-title":"The Unwritten Duel"},
+    {model:"openrouter/free",messages:[{role:"system",content:KEY_SYS},{role:"user",content:prompt}],max_tokens:4000});
+    return ((j.choices||[])[0]||{}).message?.content||"";},
+  gemini:async(k,prompt)=>{const j=await postJSON("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",{"x-goog-api-key":k},
+    {systemInstruction:{parts:[{text:KEY_SYS}]},contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json",maxOutputTokens:4000}});
+    return (((j.candidates||[])[0]||{}).content?.parts||[]).map(p=>p.text||"").join("");},
+  anthropic:async(k,prompt)=>{const j=await postJSON("https://api.anthropic.com/v1/messages",{"x-api-key":k,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    {model:"claude-haiku-5-5",max_tokens:800,system:KEY_SYS,messages:[{role:"user",content:prompt}]});
+    return (j.content||[]).map(c=>c.text||"").join("");}
+};
 const webReferee={json:async prompt=>{
+  const key=storedKey(),kind=keyKind(key);
+  if(kind){
+    /* the free router picks a model at random, so one retry if the reply isn't readable */
+    for(let i=0;;i++){try{return parseLoose(await KEY_CALL[kind](key,prompt));}catch(e){if(e&&e.code==="invalid_json"&&i<1) continue;throw e;}}
+  }
   const code=storedCode();if(!code) throw {code:"bad_code"};
   let r;try{r=await fetch("/api/referee",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code,prompt})});}catch(e){throw {code:"upstream_error"};}
   let j={};try{j=await r.json();}catch(e){}
@@ -926,6 +980,10 @@ function copyFor(e){
     case "invalid_json":return tx("errJson");
     case "bad_code":return tx("errCode");
     case "not_setup":return tx("errSetup");
+    case "bad_key":return tx("errKey");
+    case "key_region":return tx("errKeyRegion");
+    case "key_credit":return tx("errKeyCredit");
+    case "key_rate":return tx("errRateKey");
     default:return tx("errDefault");
   }
 }
@@ -933,7 +991,7 @@ async function castWritten(){
   const box=$("spell"),text=box.value.trim();
   if(!canAct()||S.you.cast) return;
   if(!T.sample){T.note={warn:true,msg:tx("noClaude")};renderLive(true);return;}
-  if(WEB&&!storedCode()){T.needCode=true;T.note={warn:true,msg:tx("codeNeeded")};renderStatic();return;}
+  if(WEB&&!canReferee()){T.needCode=true;T.note={warn:true,msg:tx("codeNeeded")};renderStatic();return;}
   if(text.length<3){T.note={warn:true,msg:tx("writeFirst")};renderLive(true);box.focus();return;}
   T.busy=true;T.note={msg:tx("reading")};renderLive(true);
   try{
@@ -946,7 +1004,7 @@ async function castWritten(){
       inscribe(pk);fire(pk,true);
     }
   }catch(e){T.note={warn:true,msg:copyFor(e)+tx("stillWork")};}
-  T.busy=false;renderLive(true);
+  T.busy=false;if(T.needCode) renderStatic();renderLive(true);
 }
 function inscribe(pk){
   const keep={};for(const k of ["name","el","shape","form","motion","palette","count","power","damage","absorb","heal","drain","breaks","creates","exploits","impact","text","written"]) keep[k]=pk[k];
@@ -1831,6 +1889,7 @@ function applyLang(){
   document.documentElement.lang=LANG;document.title=tx("title");
   for(const el of document.querySelectorAll("[data-t]")) el.textContent=tx(el.dataset.t);
   $("helpBody").innerHTML=tx("help");
+  for(const el of document.querySelectorAll(".keyHelpBody")) el.innerHTML=tx("keyHelp");
   $("lgEn").setAttribute("aria-pressed",String(LANG==="en"));$("lgRu").setAttribute("aria-pressed",String(LANG==="ru"));
   $("chipLang").textContent=LANG==="ru"?"EN":"RU";
   $("sigils").innerHTML="";T.bookKey="";T.fieldKey="";T.logKey=null;
@@ -1845,7 +1904,12 @@ document.addEventListener("click",e=>{
   if(act==="skipfin"){endFinale(true);return;}
   if(act==="fin"){if(!A.fin&&T.rep.length) startFinale();return;}
   if(act==="savevid"){saveVideo();return;}
-  if(act==="code"){const inp=$(v),val=inp?inp.value.trim():"";if(val){try{localStorage.setItem("ud.code",val);}catch(x){}inp.value="";T.needCode=false;T.note={msg:tx("codeSaved")};renderStatic();}return;}
+  if(act==="code"){const inp=$(v),val=inp?inp.value.replace(/\s+/g,""):"";if(!val) return;
+    if(keyKind(val)){try{localStorage.setItem("ud.key",val);}catch(x){}T.note={msg:tx("keySaved")};}
+    else if(/^sk-|^[A-Za-z0-9_-]{30,}$/.test(val)){inp.value="";T.note={warn:true,msg:tx("keyOther")};renderStatic();return;}
+    else{try{localStorage.removeItem("ud.key");localStorage.setItem("ud.code",inp.value.trim());}catch(x){}T.note={msg:tx("codeSaved")};}
+    inp.value="";T.needCode=false;renderStatic();return;}
+  if(act==="forgetkey"){try{localStorage.removeItem("ud.key");localStorage.removeItem("ud.code");}catch(x){}T.needCode=true;T.note=null;renderStatic();return;}
   if(A.fin) return;
   if(act==="run"){if(S.phase==="home"){startRun();beginDuelView();}}
   else if(act==="buy"){const u=UPGRADES.find(x=>x.id===v),l=lvl(v);if(u&&l<u.costs.length&&M.motes>=u.costs[l]){M.motes-=u.costs[l];M.up[v]=l+1;saveMeta();renderStatic();}}
@@ -1948,7 +2012,9 @@ function renderStatic(){
   $("home").hidden=!home;$("duel").hidden=home;$("hud").hidden=!duel;$("actbar").hidden=!duel;$("desk").hidden=!duel;
   $("chipFloor").hidden=home;$("chipFloor").innerHTML=tx("floorChip",S.floor,FLOORS)+(duel?tx("roundChip",S.round):"");
   $("chipMotes").innerHTML=tx("motesChip",M.motes);$("chipMotes").hidden=duel;
-  $("codeHome").hidden=!(WEB&&(!storedCode()||T.needCode));$("codeDesk").hidden=!(WEB&&duel&&(!storedCode()||T.needCode));
+  const needRef=WEB&&(!canReferee()||T.needCode);
+  $("codeHome").hidden=!needRef;$("codeDesk").hidden=!(needRef&&duel);
+  $("keyLine").hidden=!(WEB&&home&&!needRef);if(WEB&&home&&!needRef) $("keyWho").textContent=tx("keyWho",keyKind());
   if(home){$("pEnd").hidden=true;renderHome();return;}
   $("nm-you").textContent=tx("youRank",tx("ranks")[clamp(M.wins?8:M.best,0,8)]);
   $("nm-foe").textContent=L(rival().name);
