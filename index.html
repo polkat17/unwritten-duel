@@ -55,6 +55,8 @@ html[lang=ru] .float{font-size:clamp(9px,2.8vw,14px)}
 .hb .bar.mana u{background:var(--brass);transition:width .15s linear}.hb.foe .bar u{margin-left:auto}
 .hb .bar.chan u{background:var(--chalk)}
 .hb .num{color:var(--dust)}
+.hb .sts{display:block;height:1.25em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9px;letter-spacing:.04em}
+.hb.foe .sts{text-align:right}.sts i{font-style:normal;margin-right:5px}.hb.foe .sts i{margin:0 0 0 5px}
 #rec{position:absolute;inset:0;width:100%;height:100%;z-index:5;background:#000}
 .skip{position:absolute;right:8px;bottom:8px;z-index:6;background:rgba(0,0,0,.6);border:1px solid var(--line);color:var(--chalk);padding:6px 9px;border-radius:2px;cursor:pointer}
 .actbar{display:flex;flex-direction:column;gap:8px}
@@ -186,8 +188,8 @@ details .body b{color:var(--chalk);font-weight:500}
 
   <div class="stage"><canvas id="cv" width="144" height="100" aria-label="The duelling ground"></canvas>
     <div class="hud" id="hud" hidden>
-      <div class="hb you"><b class="px" id="nm-you">You</b><i class="bar life"><u id="hpb-you"></u></i><i class="bar mana"><u id="mpb-you"></u></i><i class="bar chan"><u id="chb-you"></u></i><span class="px num"><span id="hp-you"></span> · <span id="mp-you"></span></span></div>
-      <div class="hb foe"><b class="px" id="nm-foe"></b><i class="bar life"><u id="hpb-foe"></u></i><i class="bar mana"><u id="mpb-foe"></u></i><i class="bar chan"><u id="chb-foe"></u></i><span class="px num"><span id="hp-foe"></span> · <span id="mp-foe"></span></span></div>
+      <div class="hb you"><b class="px" id="nm-you">You</b><i class="bar life"><u id="hpb-you"></u></i><i class="bar mana"><u id="mpb-you"></u></i><i class="bar chan"><u id="chb-you"></u></i><span class="px num"><span id="hp-you"></span> · <span id="mp-you"></span></span><span class="px sts" id="sx-you"></span></div>
+      <div class="hb foe"><b class="px" id="nm-foe"></b><i class="bar life"><u id="hpb-foe"></u></i><i class="bar mana"><u id="mpb-foe"></u></i><i class="bar chan"><u id="chb-foe"></u></i><span class="px num"><span id="hp-foe"></span> · <span id="mp-foe"></span></span><span class="px sts" id="sx-foe"></span></div>
     </div>
     <div id="floats"></div>
     <canvas id="rec" width="720" height="500" hidden></canvas>
@@ -214,6 +216,7 @@ details .body b{color:var(--chalk);font-weight:500}
       <p><b>Write and cast.</b> Describe your spell and press Cast. Claude reads it and judges its power. Power 1 to 3 lands this round, 4 to 6 the next, 7 to 9 the round after, and 10 takes four rounds. While you channel you can't cast anything else, and a hard hit can stagger or break the spell. Within a round, weaker spells land first.</p>
       <p><b>Wild magic.</b> Claude rates how inspired each spell is, from ✦ to ✦✦✦✦✦. A flat "fireball" is weak. A vivid, surprising spell that plays off the battlefield or your rival can be two and a half times as strong. Inspired spells sometimes surge: they overcharge, echo across the battlefield or give mana back. Bland ones can lash back at you. Recasting the same idea fades its inspiration.</p>
       <p><b>Cataclysms.</b> Describe magic that would plainly end a mage and it becomes a cataclysm: slow, costly and fatal if it lands. Any breaking spell shatters it while it gathers, so ward yourself first or strike while your rival is busy. Your rival will feel it coming.</p>
+      <p><b>Lasting magic.</b> Spells can leave something behind: burning and poison that hurt every round (and ignore wards), silence that stops your rival casting anything new, frost that slows their casting, curses that weaken their magic. On yourself: mending, haste and swelling power. Effects show under each mage's life bar with the rounds they have left. Your rivals use them too.</p>
       <p><b>Gather focus.</b> Skip your turn and recover extra mana.</p>
       <p><b>The battlefield remembers.</b> A flood, a ring of fire, storm clouds, grasping roots: spells that create conditions leave them on the floor for a few seconds. A spell that uses one becomes a combination and hits half again as hard. Use two or more and it is a grand combination: it tears through wards and shatters whatever your rival is channelling. Your rival can use your conditions too. Some pairs react: lightning through a flood becomes Chain Lightning, a gale through fire becomes a Firestorm, shadow over light an Eclipse.</p>
       <p><b>Reading your rival.</b> Once your rival has been channelling for a round you see the colour of the magic they gather. A long channel means something big. Break it, ward against it, or burn away the conditions it needs.</p>
@@ -319,6 +322,7 @@ details .body b{color:var(--chalk);font-weight:500}
     10. Reaction codex: the sanctum shows every reaction from REACTIONS as a silhouette until the player first triggers it, then its name and pixel effect (saved as a new M field with a default in newMeta()).
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-19",t:"Lasting magic: spells can now burn, poison, silence, slow or weaken your rival over several rounds, or mend, quicken and empower you. Each effect has its own look on the mage and shows under the life bar. Rivals fight with them too.",ru:"Долгая магия: заклинания теперь могут поджигать, отравлять, лишать голоса, замедлять или ослаблять соперника на несколько раундов, а вас — лечить, ускорять и усиливать. У каждого эффекта свой вид на маге, и он показан под полосой жизни. Соперники тоже ими пользуются."},
   {d:"2026-11-19",t:"Wild magic. Claude now rates how inspired each spell is, and inspiration multiplies its power up to two and a half times. Inspired spells can surge with wild magic. Describe something that would plainly end a mage and it becomes a cataclysm: fatal if it lands, but fragile while it gathers.",ru:"Дикая магия. Claude теперь оценивает вдохновение каждого заклинания, и оно умножает силу до двух с половиной раз. Вдохновенные заклинания могут вскипеть дикой магией. Опишите то, что явно уничтожит мага, и это станет катаклизмом: смертельным, если дойдёт, но хрупким, пока собирается."},
   {d:"2026-11-19",t:"On the website you can now use your own free AI key for written spells instead of the family passcode, with step-by-step help on getting one from OpenRouter for free.",ru:"На сайте теперь можно писать заклинания со своим бесплатным ключом ИИ вместо семейного пароля. Есть пошаговая инструкция, как бесплатно получить ключ OpenRouter."},
   {d:"2026-11-19",t:"Every duel now ends with a finale: its last moves replay as a short anime-style film, with slow motion, a cut-in for every spell and a closing title, and you can save it to share. The game speaks Russian too: choose the language on the home screen or with the RU/EN chip. Life and mana now sit on the arena, and the Cast and Keep channelling button sits right under it.",ru:"Каждая дуэль теперь заканчивается финалом: последние ходы проигрываются как короткий фильм в стиле аниме, с замедлением, вставкой на каждое заклинание и финальным титром, и его можно сохранить и отправить. Игра теперь говорит по-русски: выберите язык на главном экране или кнопкой RU/EN. Жизнь и мана теперь показаны прямо на арене, а кнопка «Колдовать» и «Продолжать подготовку» — сразу под ней."},
@@ -393,6 +397,7 @@ const TX={
   title:"The Unwritten Duel",
   surgeLog:k=>({overcharge:"Wild magic surges and the spell overcharges",echo:"Wild magic surges and the battlefield echoes it",refund:"Wild magic surges and half the mana flows back",backlash:"Wild magic lashes back at you"})[k],
   fatalLog:"It is fatal.",lethalSaved:"a ward saves them by a thread",
+  stLog:(k,you,n,r)=>({burn:(you?"you are":"they are")+" set burning ("+n+" a round, "+r+(r>1?" rounds)":" round)"),poison:"poison seeps into "+(you?"you":"them")+" ("+n+" a round, "+r+" rounds)",silence:(you?"you are":"they are")+" silenced for "+r+(r>1?" rounds":" round"),slow:(you?"your":"their")+" casting slows for "+r+(r>1?" rounds":" round"),weaken:(you?"your":"their")+" magic weakens for "+r+(r>1?" rounds":" round"),regen:(you?"you":"they")+" begin to mend ("+n+" a round)",haste:(you?"your":"their")+" casting quickens for "+r+(r>1?" rounds":" round"),empower:(you?"your":"their")+" power swells for "+r+(r>1?" rounds":" round")})[k],
   floorOf:(n,m)=>"Floor "+n+" of "+m,
   dmg:n=>n+" damage",soaked:n=>" ("+n+" soaked by the ward)",wardAll:"the ward drinks all of it",wardRises:a=>"a ward of "+a+" rises",
   lifeBack:n=>n+" life returns",stolen:n=>n+" mana stolen",focusHolds:"Deep Focus holds your spell together",
@@ -407,6 +412,7 @@ const TX={
   title:"Ненаписанная дуэль",
   surgeLog:k=>({overcharge:"дикая магия вскипает, и заклинание перегружается",echo:"дикая магия вскипает, и поле боя отзывается эхом",refund:"дикая магия вскипает, и половина маны возвращается",backlash:"дикая магия бьёт по вам самим"})[k],
   fatalLog:"Это смертельно.",lethalSaved:"щит спасает их на волосок от гибели",
+  stLog:(k,you,n,r)=>({burn:(you?"вы горите":"соперник горит")+" ("+n+" за раунд, раундов: "+r+")",poison:"яд проникает в "+(you?"вас":"соперника")+" ("+n+" за раунд, раундов: "+r+")",silence:(you?"вы немеете":"соперник немеет")+" (раундов: "+r+")",slow:(you?"ваше":"его")+" колдовство замедляется (раундов: "+r+")",weaken:(you?"ваша":"его")+" магия слабеет (раундов: "+r+")",regen:(you?"вы начинаете":"соперник начинает")+" восстанавливаться ("+n+" за раунд)",haste:(you?"ваше":"его")+" колдовство ускоряется (раундов: "+r+")",empower:(you?"ваша":"его")+" сила растёт (раундов: "+r+")"})[k],
   floorOf:(n,m)=>"Этаж "+n+" из "+m,
   dmg:n=>n+" урона",soaked:n=>" ("+n+" поглотил щит)",wardAll:"щит поглощает всё",wardRises:a=>"поднимается щит на "+a,
   lifeBack:n=>"возвращается "+n+" жизни",stolen:n=>"украдено "+n+" маны",focusHolds:"глубокая сосредоточенность удерживает ваше заклинание",
@@ -493,14 +499,14 @@ const RIVALS=[
   {id:"varn",name:"Ysolde Varn",epithet:"the Tidebinder",blurb:"Floods the floor, then freezes you in it.",theme:"drowned",pal:{h:"#2d5f9e",H:"#1d3f70",r:"#3b79b8",R:"#285a8f",t:"#c9ecff",s:"#e8c9a8"},react:1150,brk:.2,wrd:.55,mnd:.2,big:.3,
    book:[
     {name:"Rising Tide",el:"tide",shape:"wave",form:"field",power:3,damage:8,creates:[{tag:"water",name:"Flooded floor"}]},
-    {name:"Frost Lock",el:"tide",shape:"bolt",form:"attack",power:4,damage:12,breaks:true,exploits:["water"],creates:[{tag:"ice",name:"Ice sheet"}]},
+    {name:"Frost Lock",el:"tide",shape:"bolt",form:"attack",power:4,damage:8,lasting:[{kind:"slow",rounds:1}],breaks:true,exploits:["water"],creates:[{tag:"ice",name:"Ice sheet"}]},
     {name:"Glacier Spear",el:"tide",shape:"beam",form:"attack",power:5,damage:26,exploits:["ice"]},
     {name:"Tide Ward",el:"tide",form:"ward",power:4,absorb:26},
     {name:"Drowning Moon",el:"tide",shape:"wave",form:"attack",power:7,damage:38},
     {name:"Undertow",el:"tide",form:"break",power:2,damage:6,breaks:true}]},
   {id:"brakk",name:"Brakk Emberhand",epithet:"the Forge-Duellist",blurb:"Sets the floor alight and never stops hitting.",theme:"forge",pal:{h:"#a33a2a",H:"#6e2219",r:"#c2553a",R:"#8c3626",t:"#ffd27a",s:"#c98f6a"},react:650,brk:.55,wrd:.1,mnd:.05,big:.2,
    book:[
-    {name:"Cinder Rain",el:"ember",shape:"rain",form:"attack",power:3,damage:10,creates:[{tag:"fire",name:"Burning ground"}]},
+    {name:"Cinder Rain",el:"ember",shape:"rain",form:"attack",power:3,damage:6,lasting:[{kind:"burn",n:3,rounds:2}],creates:[{tag:"fire",name:"Burning ground"}]},
     {name:"Forge Breath",el:"ember",shape:"beam",form:"attack",power:4,damage:20,exploits:["fire"]},
     {name:"Bellows",el:"void",shape:"wave",form:"field",power:2,damage:6,creates:[{tag:"wind",name:"Roaring wind"}]},
     {name:"Firestorm",el:"ember",shape:"burst",form:"attack",power:6,damage:24,exploits:["fire","wind"]},
@@ -513,14 +519,14 @@ const RIVALS=[
     {name:"Moth Veil",el:"void",form:"ward",power:3,absorb:20},
     {name:"Steal Wick",el:"void",shape:"curse",form:"attack",power:3,damage:5,drain:8},
     {name:"Pale Lance",el:"void",shape:"beam",form:"attack",power:5,damage:28},
-    {name:"Hush",el:"void",form:"break",power:2,damage:4,breaks:true}]},
+    {name:"Hush",el:"void",form:"break",power:3,damage:2,breaks:true,lasting:[{kind:"silence",rounds:1}]}]},
   {id:"hemlock",name:"Old Hemlock",epithet:"the Rootwarden",blurb:"Roots you in place, mends, and waits for the kill.",theme:"thornwood",pal:{h:"#3f6b34",H:"#294a22",r:"#5a8a44",R:"#3d6430",t:"#e6ff9a",s:"#b89a78"},react:1300,brk:.15,wrd:.35,mnd:.6,big:.45,
    book:[
     {name:"Deep Roots",el:"thorn",shape:"rain",form:"field",power:3,heal:5,creates:[{tag:"roots",name:"Grasping roots"}]},
     {name:"Strangleroot",el:"thorn",shape:"bolt",form:"attack",power:4,damage:14,breaks:true,exploits:["roots"]},
     {name:"Bark Skin",el:"thorn",form:"ward",power:4,absorb:26},
-    {name:"Old Sap",el:"thorn",form:"heal",power:4,heal:11},
-    {name:"Briar Volley",el:"thorn",shape:"rain",form:"attack",power:3,damage:16},
+    {name:"Old Sap",el:"thorn",form:"heal",power:4,heal:6,lasting:[{kind:"regen",n:4,rounds:3}]},
+    {name:"Briar Volley",el:"thorn",shape:"rain",form:"attack",power:3,damage:10,lasting:[{kind:"poison",n:3,rounds:3}]},
     {name:"Wildwood Maw",el:"thorn",shape:"beam",form:"attack",power:8,damage:46}]},
   {id:"kesh",name:"Pyra Kesh",epithet:"the Ash Oracle",blurb:"Channels enormous fire. Break it or burn.",theme:"forge",pal:{h:"#2a2426",H:"#171314",r:"#4a3a3a",R:"#2e2424",t:"#ff8a3d",s:"#d9b08c"},react:1000,brk:.1,wrd:.25,mnd:.1,big:.6,
    book:[
@@ -536,7 +542,7 @@ const BOSS={id:"unwritten",name:"The Unwritten",epithet:"who signs no spell",blu
     {name:"Gathering Storm",el:"void",shape:"rain",form:"field",power:3,damage:8,creates:[{tag:"storm",name:"Storm clouds"}]},
     {name:"Black Rain",el:"tide",shape:"rain",form:"field",power:3,damage:8,creates:[{tag:"water",name:"Black water"}]},
     {name:"Drowned Lightning",el:"void",shape:"beam",form:"attack",power:5,damage:20,breaks:true,exploits:["storm","water"]},
-    {name:"Rewrite",el:"void",shape:"curse",form:"attack",power:4,damage:18,drain:4,exploits:["*"]},
+    {name:"Rewrite",el:"void",shape:"curse",form:"attack",power:4,damage:12,drain:4,lasting:[{kind:"weaken",rounds:1}],exploits:["*"]},
     {name:"Null Ward",el:"void",form:"ward",power:5,absorb:32},
     {name:"Severance",el:"void",form:"break",power:3,damage:6,breaks:true},
     {name:"Unmaking",el:"void",shape:"beam",form:"attack",power:10,damage:58}]};
@@ -566,6 +572,18 @@ const BOOKS={};
 function bookOf(R){return BOOKS[R.id]||(BOOKS[R.id]=R.book.map(b=>normalize(Object.assign({motion:RIVAL_MOTION[b.name]},b),false)));}
 /* Turn anything (the referee's JSON, a sigil, a rival's spell) into a spell package that fits its power. */
 const INSP_MULT=[0,.75,1,1.4,1.9,2.5];
+/* Lasting magic. "rival" kinds land on the target, "self" kinds on the caster. Cost is budget points: per point of n per round, or flat per round. */
+const STATUS={
+  burn:{on:"rival",perN:.9,maxN:40,maxR:3,c:["#fff1b8","#ff8a3d","#c7372f"]},
+  poison:{on:"rival",perN:.75,maxN:30,maxR:5,c:["#e8ffb0","#9be04a","#3f7d2a"]},
+  silence:{on:"rival",flat:11,maxR:2,c:["#ffffff","#c9a2ff","#7a4fd6"]},
+  slow:{on:"rival",flat:7,maxR:3,c:["#ffffff","#bfefff","#7ab8d8"]},
+  weaken:{on:"rival",flat:7,maxR:3,c:["#e0c8ff","#8a5fc0","#3a2458"]},
+  regen:{on:"self",perN:1.6,maxN:25,maxR:4,c:["#f0ffb0","#7fcf4a","#2f7d3a"]},
+  haste:{on:"self",flat:8,maxR:3,c:["#ffffff","#fff1a8","#e0b24a"]},
+  empower:{on:"self",flat:9,maxR:3,c:["#fff1a8","#ffd27a","#c08a2a"]}
+};
+function lastingCost(l){const d=STATUS[l.kind];return d.perN?l.n*l.rounds*d.perN:d.flat*l.rounds;}
 function normalize(raw,written){
   raw=raw||{};
   const p=num(raw.power,1,10),list=a=>Array.isArray(a)?a:[];
@@ -576,16 +594,23 @@ function normalize(raw,written){
     impact:str(raw.impact,260),text:str(raw.text,320),written:!!written,
     palette:Array.isArray(raw.palette)&&raw.palette.length>=3&&raw.palette.slice(0,3).every(h=>/^#[0-9a-f]{6}$/i.test(String(h)))?raw.palette.slice(0,3).map(h=>String(h).toLowerCase()):null,
     count:num(raw.count,0,16),
-    insp:written?num(raw.inspiration||2,1,5):2,lethal:!!(written&&raw.lethal)};
+    insp:written?num(raw.inspiration||2,1,5):2,lethal:!!(written&&raw.lethal),
+    lasting:list(raw.lasting).map(l=>{const k=String((l&&l.kind)||"").toLowerCase(),d=STATUS[k];return d?{kind:k,n:d.perN?num(l.n,1,d.maxN):0,rounds:num(l.rounds||2,1,d.maxR)}:null;}).filter(Boolean)
+      .filter((l,i,a)=>a.findIndex(x=>x.kind===l.kind)===i).slice(0,2)};
   if(pk.lethal){pk.power=Math.max(8,pk.power);pk.form=pk.form==="ward"||pk.form==="heal"?"attack":pk.form;}
   pk.motion=MOTIONS.includes(raw.motion)?raw.motion:pk.form==="ward"?"dome":pk.form==="heal"?"aura":pk.form==="break"?"lightning":pk.shape;
   /* Inspiration (judged by the referee for written spells) multiplies what the words buy. */
   const budget=(written?7*INSP_MULT[pk.insp]:6)*pk.power;
   if((pk.breaks?p:0)+pk.creates.length*4>budget) pk.creates=pk.creates.slice(0,1);
   const room=Math.max(0,budget-(pk.breaks?p:0)-pk.creates.length*4);
-  const flex=pk.damage+pk.absorb*.85+pk.heal*2+pk.drain*1.5;
-  if(flex>room&&flex>0){const k=room/flex;for(const f of ["damage","absorb","heal","drain"]) pk[f]=Math.floor(pk[f]*k);}
-  if(flex===0&&!pk.breaks&&!pk.creates.length){pk.damage=Math.round(room*.85);pk.form="attack";}
+  /* flat-cost lasting effects lose rounds first if they don't fit; scaled ones share the remaining budget */
+  let flat=0;for(const l of pk.lasting) if(!STATUS[l.kind].perN){while(l.rounds>1&&flat+lastingCost(l)>room*.6) l.rounds--;flat+=lastingCost(l);}
+  if(flat>room){pk.lasting=pk.lasting.filter(l=>STATUS[l.kind].perN);flat=0;}
+  const room2=room-flat,scaled=pk.lasting.filter(l=>STATUS[l.kind].perN);
+  const flex=pk.damage+pk.absorb*.85+pk.heal*2+pk.drain*1.5+scaled.reduce((a,l)=>a+lastingCost(l),0);
+  if(flex>room2&&flex>0){const k=room2/flex;for(const f of ["damage","absorb","heal","drain"]) pk[f]=Math.floor(pk[f]*k);for(const l of scaled) l.n=Math.floor(l.n*k);}
+  pk.lasting=pk.lasting.filter(l=>!STATUS[l.kind].perN||l.n>0);
+  if(flex===0&&!flat&&!pk.breaks&&!pk.creates.length){pk.damage=Math.round(room*.85);pk.form="attack";}
   return pk;
 }
 function manaFor(pk,who){
@@ -600,10 +625,33 @@ function manaFor(pk,who){
 }
 /* Rounds of channelling by power: 1-3 land this round, 4-6 next round, 7-9 the round after, 10 takes four. Within a round, weaker spells land first. */
 function roundsFor(p,who){let r=p<=3?1:p<=6?2:p<=9?3:4;if(who==="you"&&has("hourglass")&&p>=7) r--;return Math.max(1,r);}
-function castMs(p,who){return (roundsFor(p,who)-1)*ROUND+200+90*p;}
+function castMs(p,who){const r=Math.max(1,roundsFor(p,who)+(hasSt(who,"slow")?1:0)-(hasSt(who,"haste")?1:0));return (r-1)*ROUND+200+90*p;}
+function hasSt(who,k){return !!(S.st&&S.st[who]&&S.st[who].some(x=>x.kind===k));}
+function stOf(who,k){return S.st&&S.st[who]?S.st[who].find(x=>x.kind===k):null;}
+function addStatus(who,l,by,ev){
+  S.st=S.st||{you:[],foe:[]};const list=S.st[who];
+  if(l.kind==="silence"&&(hasSt(who,"silence")||(S.silEnd&&S.silEnd[who]!=null&&S.round-S.silEnd[who]<=1))) return false;
+  const cur=list.find(x=>x.kind===l.kind);
+  if(cur){cur.n=Math.max(cur.n,l.n);cur.rounds=Math.max(cur.rounds,l.rounds);}else list.push({kind:l.kind,n:l.n,rounds:l.rounds,by});
+  ev.push({t:"status",who,kind:l.kind,n:l.n,rounds:l.rounds});return true;
+}
+/* Lasting magic ticks once at the start of every round's play-out. */
+function tickStatus(){
+  if(!S.st) return;const ev=[{t:"tick"}];
+  for(const w of ["you","foe"]){
+    for(const x of S.st[w]){
+      if((x.kind==="burn"||x.kind==="poison")&&x.n>0){const n=Math.min(S[w].hp,x.n);S[w].hp-=n;ev.push({t:"hit",who:w,n,soaked:0,dot:x.kind,fatal:S[w].hp<=0});}
+      if(x.kind==="regen"&&x.n>0){const b=S[w].hp;S[w].hp=clamp(b+x.n,0,S[w].maxHp);if(S[w].hp>b) ev.push({t:"heal",who:w,n:S[w].hp-b});}
+      x.rounds--;
+      if(x.rounds<=0&&x.kind==="silence"){S.silEnd=S.silEnd||{};S.silEnd[w]=S.round;}
+    }
+    S.st[w]=S.st[w].filter(x=>x.rounds>0);
+  }
+  if(ev.length>1){S.ev.push(ev);if(S.ev.length>12) S.ev.shift();}
+}
 /* strict: never cast weakened. Otherwise a spell you can't fully pay for is cast at reduced power, down to a third. */
 function beginCast(who,pk,strict){
-  const m=S[who];if(m.cast||S.phase!=="duel"||!pk) return null;
+  const m=S[who];if(m.cast||S.phase!=="duel"||!pk||hasSt(who,"silence")) return null;
   const c=Object.assign({},pk,{creates:pk.creates.slice(),exploits:pk.exploits.slice()});
   let cost=manaFor(c,who);
   if(cost>m.mana){
@@ -635,7 +683,7 @@ function startRun(){
 }
 function startDuel(){
   const R=rival();
-  S.phase="duel";S.t=0;S.effects=[];S.field=[];S.ev=[];S.uses={};S.queued=null;
+  S.phase="duel";S.t=0;S.effects=[];S.field=[];S.ev=[];S.uses={};S.queued=null;S.st={you:[],foe:[]};S.silEnd={};S.tickRound=1;
   S.you.cast=null;S.you.focusUsed=false;S.you.mana=Math.min(S.you.maxMana,60+10*lvl("kindle"));
   const hp=R.boss?240:70+S.floor*14;
   S.foe={hp,maxHp:hp,mana:60,maxMana:100,regen:3.5+.25*S.floor,cast:null,nextAt:0,gather:false};
@@ -690,7 +738,7 @@ function land(who){
   if(c.heal>0){const b=S[who].hp;S[who].hp=clamp(b+Math.round(c.heal*mult*sm),0,S[who].maxHp);if(S[who].hp>b){ev.push({t:"heal",who,n:S[who].hp-b});bits.push(tx("lifeBack",S[who].hp-b));}}
   let dealt=0;
   if(c.damage>0){
-    let dmg=Math.round(c.damage*mult*sm*(mine?(has("emberheart")&&c.el==="ember"?1.3:1):S.foeMul));
+    let dmg=Math.round(c.damage*mult*sm*(mine?(has("emberheart")&&c.el==="ember"?1.3:1):S.foeMul)*(hasSt(who,"weaken")?.7:1)*(hasSt(who,"empower")?1.35:1));
     /* A cataclysm that lands unbroken ends the duel; only a ward (or a boss's sheer size) can stop it. */
     if(c.lethal) dmg=Math.max(dmg,o==="foe"&&R.boss?Math.ceil(S[o].maxHp*.5):S[o].hp);
     const r=hurt(o,dmg,c.el,grand||c.lethal,ev);dealt=r.dealt;
@@ -707,6 +755,10 @@ function land(who){
       else{S[o].cast=null;ev.push({t:"broken",who:o});bits.push(tx("shatter",mine,L(R.name),mine?L(oc.name):oc.name));if(o==="foe") S.foe.nextAt=S.t+700;}
     }else if((c.breaks||dealt>=2.5*oc.power)&&!(o==="you"&&has("steady"))){oc.end+=450;ev.push({t:"delayed",who:o});bits.push(tx("stagger",mine));}
   }
+  for(const l of c.lasting||[]){
+    const tgt=STATUS[l.kind].on==="self"?who:o,n=Math.round(l.n*(STATUS[l.kind].on==="self"?1:mult*sm));
+    if(S[tgt].hp>0&&addStatus(tgt,{kind:l.kind,n,rounds:l.rounds},who,ev)) bits.push(tx("stLog",l.kind,tgt==="you",n,l.rounds));
+  }
   for(const cr of c.creates){addField(cr.tag,cr.name,who);ev.push({t:"field",tag:cr.tag,name:cr.name||TAGS[cr.tag].name});}
   if(surge==="echo"){
     for(const f of S.field) f.until+=6000;
@@ -718,7 +770,7 @@ function land(who){
   if(c.creates.length) bits.push(tx("spreads",c.creates.map(x=>L(x.name||TAGS[x.tag].name))));
   const rx=reactionOf(used.map(f=>f.tag));
   const head=k?tx("combo",grand)+(rx?", "+L(rx.name):"")+": "+used.map(f=>L(f.name)).join(" + ")+". ":"";
-  const sn=mine?c.name:L(c.name);
+  const sn=mine&&c.written?c.name:L(c.name);
   const flavour=(mine&&c.impact?c.impact:tx("flavour",mine,L(R.name),sn,c.el,tier(c.power),c.damage>0))+(S[o].hp<=0?" "+tx("fatalLog"):"");
   pushLog(tx("castBy",mine,L(R.name),sn)+(c.weak?tx("weakened"):""),head+flavour+(bits.length?" "+cap(bits.join(", "))+".":""));
   S.ev.push(ev);if(S.ev.length>12) S.ev.shift();
@@ -776,6 +828,7 @@ function checkEnd(){
 }
 function update(dt){
   if(S.phase!=="duel") return;
+  if(S.tickRound!==S.round){S.tickRound=S.round;tickStatus();checkEnd();if(S.phase!=="duel") return;}
   S.t+=dt;const s=dt/1000;
   for(const w of ["you","foe"]) S[w].mana=clamp(S[w].mana+S[w].regen*s,0,S[w].maxMana);
   S.effects=S.effects.filter(e=>e.until>S.t);
@@ -803,6 +856,7 @@ Object.assign(TX.en,{
       <p><b>Write and cast.</b> Describe your spell and press Cast. Claude reads it and judges its power. Power 1 to 3 lands this round, 4 to 6 the next, 7 to 9 the round after, and 10 takes four rounds. While you channel you can't cast anything else, and a hard hit can stagger or break the spell. Within a round, weaker spells land first.</p>
       <p><b>Wild magic.</b> Claude rates how inspired each spell is, from ✦ to ✦✦✦✦✦. A flat "fireball" is weak. A vivid, surprising spell that plays off the battlefield or your rival can be two and a half times as strong. Inspired spells sometimes surge: they overcharge, echo across the battlefield or give mana back. Bland ones can lash back at you. Recasting the same idea fades its inspiration.</p>
       <p><b>Cataclysms.</b> Describe magic that would plainly end a mage and it becomes a cataclysm: slow, costly and fatal if it lands. Any breaking spell shatters it while it gathers, so ward yourself first or strike while your rival is busy. Your rival will feel it coming.</p>
+      <p><b>Lasting magic.</b> Spells can leave something behind: burning and poison that hurt every round (and ignore wards), silence that stops your rival casting anything new, frost that slows their casting, curses that weaken their magic. On yourself: mending, haste and swelling power. Effects show under each mage's life bar with the rounds they have left. Your rivals use them too.</p>
       <p><b>Gather focus.</b> Skip your turn and recover extra mana.</p>
       <p><b>The battlefield remembers.</b> A flood, a ring of fire, storm clouds, grasping roots: spells that create conditions leave them on the floor for a few seconds. A spell that uses one becomes a combination and hits half again as hard. Use two or more and it is a grand combination: it tears through wards and shatters whatever your rival is channelling. Your rival can use your conditions too. Some pairs react: lightning through a flood becomes Chain Lightning, a gale through fire becomes a Firestorm, shadow over light an Eclipse.</p>
       <p><b>Reading your rival.</b> Once your rival has been channelling for a round you see the colour of the magic they gather. A long channel means something big. Break it, ward against it, or burn away the conditions it needs.</p>
@@ -823,6 +877,8 @@ Object.assign(TX.en,{
   descr:(n,tier,p,cost,r,bits)=>n+": "+tier.toLowerCase()+" of power "+p+", "+cost+" mana, "+(r===1?"lands this round":"channels for "+r+" rounds")+". "+bits+".",
   bInsp:n=>"✦".repeat(n)+"·".repeat(5-n)+" "+["","flat","sound","vivid","inspired","astonishing"][n],bLethal:"a cataclysm: fatal if it lands",
   holdLethal:n=>"You are gathering "+n+". If it lands, it is fatal, but any breaking spell will shatter it. A ward on you keeps it safe.",
+  stChip:(k,n,r)=>({burn:"Burning",poison:"Poison",silence:"Silenced",slow:"Slowed",weaken:"Weakened",regen:"Mending",haste:"Haste",empower:"Empowered"})[k]+((k==="burn"||k==="poison"||k==="regen")?" "+n:"")+" ("+r+")",
+  silencedNote:"You are silenced: no new spells this round. Gather focus while it passes.",
   surgeT:"Wild surge",surgeK:k=>({overcharge:"Overcharge",echo:"Echo",refund:"Rebound",backlash:"Backlash"})[k],fatalT:"Fatal",lethalT:"Cataclysm",
   bDmg:n=>n+" damage",bWard:n=>"ward "+n,bHeal:n=>"heal "+n,bDrain:n=>"drain "+n,bBreak:"breaks casting",bCreates:s=>"creates "+s,bUses:s=>"uses "+s,
   blocked:"Blocked",wardF:n=>"Ward "+n,manaF:n=>n+" mana",broken:"Broken",staggered:"Staggered",wardDown:"Ward down",
@@ -863,6 +919,7 @@ Object.assign(TX.ru,{
       <p><b>Пишите и колдуйте.</b> Опишите заклинание и нажмите «Колдовать». Claude прочтёт его и оценит силу. Сила 1–3 срабатывает в этом раунде, 4–6 — в следующем, 7–9 — ещё через раунд, а 10 готовится четыре раунда. Пока вы готовите заклинание, другое сотворить нельзя, а сильный удар может сбить или сорвать его. Внутри раунда слабые заклинания срабатывают первыми.</p>
       <p><b>Дикая магия.</b> Claude оценивает, насколько вдохновенно заклинание, от ✦ до ✦✦✦✦✦. Плоский «огненный шар» слаб. Яркое, неожиданное заклинание, которое играет с полем боя или с соперником, может быть в два с половиной раза сильнее. Вдохновенные заклинания иногда вскипают: перегружаются, отзываются эхом по полю или возвращают ману. Скучные могут ударить по вам самим. Повтор той же идеи гасит вдохновение.</p>
       <p><b>Катаклизмы.</b> Опишите магию, которая явно уничтожила бы мага, и она станет катаклизмом: медленным, дорогим и смертельным, если дойдёт. Пока он собирается, любое срывающее заклинание его разобьёт, поэтому сначала прикройтесь щитом или бейте, пока соперник занят. Соперник почувствует, что он надвигается.</p>
+      <p><b>Долгая магия.</b> Заклинания могут оставлять след: горение и яд ранят каждый раунд (и не замечают щитов), немота не даёт сопернику начать новое заклинание, мороз замедляет его колдовство, проклятия ослабляют магию. На себя: лечение, ускорение и растущая сила. Эффекты видны под полосой жизни мага вместе с оставшимися раундами. Соперники пользуются ими тоже.</p>
       <p><b>Сосредоточение.</b> Пропустите ход и восстановите больше маны.</p>
       <p><b>Поле боя помнит.</b> Потоп, кольцо огня, грозовые тучи, цепкие корни: заклинания, создающие условия, оставляют их на поле на несколько секунд. Заклинание, которое использует условие, становится комбинацией и бьёт в полтора раза сильнее. Используйте два и больше — это великая комбинация: она пробивает щиты и срывает то, что готовит соперник. Соперник тоже может использовать ваши условия. Некоторые пары реагируют: молния по воде становится цепной молнией, ветер с огнём — огненной бурей, тень и свет — затмением.</p>
       <p><b>Читайте соперника.</b> Когда соперник готовит заклинание дольше раунда, видно цвет его магии. Долгая подготовка — значит, будет что-то большое. Сорвите его, закройтесь щитом или уничтожьте нужные ему условия.</p>
@@ -883,6 +940,8 @@ Object.assign(TX.ru,{
   descr:(n,tier,p,cost,r,bits)=>"«"+n+"»: "+tier.toLowerCase()+" силы "+p+", "+cost+" маны, "+(r===1?"срабатывает в этом раунде":"готовится "+r+(r<5?" раунда":" раундов"))+". "+bits+".",
   bInsp:n=>"✦".repeat(n)+"·".repeat(5-n)+" "+["","плоско","крепко","ярко","вдохновенно","поразительно"][n],bLethal:"катаклизм: смертелен, если дойдёт",
   holdLethal:n=>"Вы собираете «"+n+"». Если оно дойдёт, это смерть, но любое срывающее заклинание его разобьёт. Щит на вас его бережёт.",
+  stChip:(k,n,r)=>({burn:"Горит",poison:"Яд",silence:"Немота",slow:"Замедл.",weaken:"Слабость",regen:"Лечение",haste:"Ускор.",empower:"Мощь"})[k]+((k==="burn"||k==="poison"||k==="regen")?" "+n:"")+" ("+r+")",
+  silencedNote:"Вы онемели: в этом раунде новых заклинаний нет. Соберите фокус, пока это пройдёт.",
   surgeT:"Дикий всплеск",surgeK:k=>({overcharge:"Перегрузка",echo:"Эхо",refund:"Отдача",backlash:"Откат"})[k],fatalT:"Смертельно",lethalT:"Катаклизм",
   bDmg:n=>n+" урона",bWard:n=>"щит "+n,bHeal:n=>"лечение "+n,bDrain:n=>"кража маны "+n,bBreak:"срывает колдовство",bCreates:s=>"создаёт: "+s,bUses:s=>"использует: "+s,
   blocked:"Отбито",wardF:n=>"Щит "+n,manaF:n=>n+" маны",broken:"Сорвано",staggered:"Сбито",wardDown:"Щит пал",
@@ -1011,6 +1070,7 @@ INSPIRATION 1-5 is how imaginative the spell is, and it multiplies everything th
 LETHAL: set lethal true only when the words describe magic that would plainly end a mage outright (unmaking them, dropping a mountain on them, calling down the sun, erasing their name from existence). A lethal spell is a cataclysm: power 8-10, slow to gather and fragile, since any spell that breaks casting shatters it. If it lands unbroken it kills unless a ward saves them. Don't mark lethal for ordinary attacks, however strong.
 BUDGET: a spell of power P has 7*P points times its inspiration. Damage costs 1 point each, ward absorption 0.85, healing 2, mana drained from the rival 1.5, breaking the rival's spell while they channel costs P, and each battlefield condition created costs 4. Spend the whole budget on what the words describe; do not be stingy.
 BATTLEFIELD CONDITIONS use only these tags: water, fire, ice, storm, roots, shadow, wind, light. A spell may CREATE up to 2 when its words make them (a flood creates water, burning the floor creates fire, vines create roots, calling clouds creates storm). A spell may EXPLOIT conditions that are on the field right now when its words use them (lightning through the flood exploits water; igniting the roots exploits roots; a gale that fans the fire exploits fire). Each exploited condition multiplies the spell, and two or more make a Grand Combination that tears through wards and shatters the rival's casting. Exploited conditions are used up. Some pairs react with each other (water+storm, water+ice, fire+wind, storm+wind, fire+roots, water+roots, light+shadow, fire+ice, fire+water, ice+storm), so reward words that use both. Only list a tag in exploits if it is on the field now; a condition this same spell creates cannot be exploited by it.
+LASTING MAGIC: a spell may leave up to 2 lasting effects when its words make them, listed in "lasting" with kind, n (strength per round, for burn, poison and regen only) and rounds. On the rival: burn (n damage a round, up to 3 rounds; costs 0.9 per n per round), poison (n damage a round, up to 5 rounds; 0.75 per n per round), silence (no new spells for 1-2 rounds; 11 per round), slow (their spells take a round longer to gather, up to 3 rounds; 7 per round), weaken (their damage drops by 30%, up to 3 rounds; 7 per round). On the caster: regen (heals n a round, up to 4 rounds; 1.6 per n per round), haste (spells gather a round faster, up to 3 rounds; 8 per round), empower (damage up 35%, up to 3 rounds; 9 per round). Burn and poison ignore wards. Venom, flames that cling, curses that steal the voice, frost that numbs the hands, blessings: reward them with lasting effects.
 ELEMENT, for colour and ward matching: fire and heat are ember; water, ice and mist are tide; plants, beasts, stone and earth are thorn; everything else is void. Ember beats Thorn, Thorn beats Tide, Tide beats Ember.
 FORM is the spell's main job: attack, ward, break (interrupt), heal, or field (mostly creates conditions).
 LOOK: the spell is animated in pixel art, so describe how it looks. MOTION is one of: bolt (a single projectile), volley (many projectiles), beam (a continuous ray), lightning (strikes from the sky), meteor (falls from above), rain (many drops from above), wave (rolls along the floor), pillar (erupts from the floor under the target), spikes (a line of spikes bursting from the ground toward the target), vortex (a spiral around the target), chains (bonds that wrap the target), orb (a slow, heavy sphere), burst (an explosion at the target), curse (runes and a closing spiral), swarm (many small creatures or motes), wall (a barrier in front of the caster), dome (a shield around the caster), aura (a glow rising around the caster). Pick the one that best matches the words. PALETTE is three hex colours that match what the words describe: a bright highlight, the main colour, and a deep shadow (frost might be "#ffffff","#a8e6ff","#3a78b8"; hellfire "#fff1a8","#ff5a1f","#6a0f14"). COUNT is how many projectiles, drops or creatures for volley, rain and swarm (3-16), otherwise 0. SHAPE is the closest simple shape: bolt, beam, rain, wave, burst or curse.
@@ -1022,7 +1082,7 @@ Spells the player already cast this duel: ${Object.keys(S.uses).join("; ")||"non
 <spell>${text}</spell>
 
 Reply with only a JSON object:
-{"valid":true,"reason":"","name":"2-4 word name (keep the player's own name if they gave one)","power":5,"inspiration":3,"lethal":false,"element":"ember","form":"attack","shape":"bolt","motion":"meteor","palette":["#fff1a8","#ff5a1f","#6a0f14"],"count":0,"damage":0,"absorb":0,"heal":0,"drain":0,"breaks":false,"creates":[{"tag":"water","name":"2-3 word name"}],"exploits":[],"impact":"one vivid present-tense sentence of the spell landing on ${R.name}, no numbers"}`;
+{"valid":true,"reason":"","name":"2-4 word name (keep the player's own name if they gave one)","power":5,"inspiration":3,"lethal":false,"element":"ember","form":"attack","shape":"bolt","motion":"meteor","palette":["#fff1a8","#ff5a1f","#6a0f14"],"count":0,"damage":0,"absorb":0,"heal":0,"drain":0,"breaks":false,"creates":[{"tag":"water","name":"2-3 word name"}],"exploits":[],"lasting":[{"kind":"poison","n":6,"rounds":3}],"impact":"one vivid present-tense sentence of the spell landing on ${R.name}, no numbers"}`;
 }
 function copyFor(e){
   switch(e&&e.code){
@@ -1044,6 +1104,7 @@ function copyFor(e){
 async function castWritten(){
   const box=$("spell"),text=box.value.trim();
   if(!canAct()||S.you.cast) return;
+  if(hasSt("you","silence")){T.note={warn:true,msg:tx("silencedNote")};renderLive(true);return;}
   if(!T.sample){T.note={warn:true,msg:tx("noClaude")};renderLive(true);return;}
   if(WEB&&!canReferee()){T.needCode=true;T.note={warn:true,msg:tx("codeNeeded")};renderStatic();return;}
   if(text.length<3){T.note={warn:true,msg:tx("writeFirst")};renderLive(true);box.focus();return;}
@@ -1061,7 +1122,7 @@ async function castWritten(){
   T.busy=false;if(T.needCode) renderStatic();renderLive(true);
 }
 function inscribe(pk){
-  const keep={};for(const k of ["name","el","shape","form","motion","palette","count","power","damage","absorb","heal","drain","breaks","creates","exploits","impact","text","written","insp","lethal"]) keep[k]=pk[k];
+  const keep={};for(const k of ["name","el","shape","form","motion","palette","count","power","damage","absorb","heal","drain","breaks","creates","exploits","impact","text","written","insp","lethal","lasting"]) keep[k]=pk[k];
   M.book=[keep].concat((M.book||[]).filter(b=>b.name!==pk.name)).slice(0,8);
   saveMeta();T.bookKey="";
 }
@@ -1070,6 +1131,7 @@ function commit(){T.resolving=true;S.roundEnd=S.t+ROUND;T.lastSnap=snapState();r
 function fire(pk,fromWriting){
   SFX.tick();
   if(S.you.cast) return;
+  if(hasSt("you","silence")){T.note={warn:true,msg:tx("silencedNote")};renderLive(true);return;}
   const c=beginCast("you",pk,false);
   if(!c){T.note={warn:true,msg:tx("notEnough",pk.written?pk.name:L(pk.name),manaFor(pk,"you"),fromWriting)};renderLive(true);return;}
   T.note=c.weak?{msg:tx("overdrawn",c.written?c.name:L(c.name),c.power)}:(fromWriting?{msg:describe(c)}:null);SFX.begin(c.el);
@@ -1078,6 +1140,7 @@ function fire(pk,fromWriting){
 function describe(c){
   const bits=[];
   if(c.written&&c.insp) bits.push(tx("bInsp",c.insp));if(c.lethal) bits.push(tx("bLethal"));
+  for(const l of c.lasting||[]) bits.push(tx("stChip",l.kind,l.n,l.rounds));
   if(c.damage) bits.push(tx("bDmg",c.damage));if(c.absorb) bits.push(tx("bWard",c.absorb));if(c.heal) bits.push(tx("bHeal",c.heal));if(c.drain) bits.push(tx("bDrain",c.drain));if(c.breaks) bits.push(tx("bBreak"));
   if(c.creates.length) bits.push(tx("bCreates",c.creates.map(x=>x.name||L(TAGS[x.tag].name)).join(", ")));
   if(c.exploits.length) bits.push(tx("bUses",c.exploits.map(t=>TAGS[t]?L(TAGS[t].name):t).join(" + ")));
@@ -1317,7 +1380,7 @@ function impact(e,c){
       A.fx.push({type:"shock",t0:now,dur:520+e.n*6,x:p.x,c,r:10+Math.min(40,e.n)});
       if(e.n>=8) A.decals.push({x:p.x-7+Math.random()*14,o:Math.floor(Math.random()*12),c:c[2]});
       if(A.decals.length>26) A.decals.shift();
-      floatText(e.who,"-"+e.n,"dmg");SFX.hit(e.n);
+      floatText(e.who,"-"+e.n,"dmg");if(e.dot) SFX.tick();else SFX.hit(e.n);
       if(e.fatal){A.flash=now+320;spark(p.x,p.y,["#ffffff","#fff1a8",c[1]],90,.2,1300);titleCard(tx("fatalT"),"combo");}
       if(!calm&&e.n>=22) A.flash=now+180;
       try{if(e.who==="you"&&navigator.vibrate) navigator.vibrate(Math.min(120,e.n*4));}catch(x){}
@@ -1329,10 +1392,12 @@ function impact(e,c){
   else if(e.t==="field"){const tc=TAGS[e.tag]?TAGS[e.tag].c:c;for(let x=6;x<W;x+=8) spark(x,FLOOR,tc,2,.05,600);floatAt(72,FLOOR-30,L(e.name),"info");}
   else if(e.t==="broken"){const q=gem(e.who,true);spark(q.x,q.y,["#ffffff","#ffd27a","#de6a4f"],40,.14,700);A.flash=now+160;floatText(e.who,tx("broken"),"dmg");SFX.broken();}
   else if(e.t==="delayed"){floatText(e.who,tx("staggered"),"info");}
+  else if(e.t==="status"){const d=STATUS[e.kind],q=chest(e.who);spark(q.x,q.y,d.c,30,.1,800,e.kind==="regen");floatText(e.who,tx("stChip",e.kind,e.n,e.rounds),"info");}
   else if(e.t==="surge"){const q=gem(e.who,true);spark(q.x,q.y,["#ffffff","#ffd27a","#c08cff","#7ff0d0"],60,.16,900);A.flash=now+200;titleCard(tx("surgeT"),"combo",tx("surgeK",e.kind));SFX.combo(2);}
   else if(e.t==="wardbreak"){spark(p.x,p.y,["#ffffff","#cfe9ff"],26,.12,560);floatText(e.who,tx("wardDown"),"info");SFX.wardDown();}
 }
 function play(ev){
+  if(ev[0]&&ev[0].t==="tick"){for(const e of ev.slice(1)) impact(e,e.dot?STATUS[e.dot].c:EL.void.c);return 900*(A.slow||1);}
   let arrive=0,pal=EL.void.c,hold=0;
   for(const e of ev){
     if(e.t==="cast"){launch(e);arrive=estFor(e);pal=palOf(e);hold=Math.max(hold,holdFor(e));}
@@ -1719,6 +1784,20 @@ function drawFx(f,now){
   return true;
 }
 let last=0,demoAt=0;
+/* lasting magic made visible on the mages */
+function drawStatus(now,dt){
+  for(const w of ["you","foe"]) for(const x of S.st[w]||[]){
+    const d=STATUS[x.kind],q=chest(w),r=Math.random,k=dt/16;
+    if(x.kind==="burn"&&r()<.5*k) A.parts.push({x:q.x-5+r()*10,y:q.y+8-r()*16,vx:(r()-.5)*.01,vy:-.03-r()*.03,life:420,max:420,c:d.c[Math.floor(r()*3)]});
+    else if(x.kind==="poison"&&r()<.22*k) A.parts.push({x:q.x-5+r()*10,y:q.y+6,vx:0,vy:-.015-r()*.015,life:900,max:900,c:d.c[1+Math.floor(r()*2)]});
+    else if(x.kind==="regen"&&r()<.12*k) A.parts.push({x:q.x-6+r()*12,y:q.y+4,vx:0,vy:-.02,life:800,max:800,c:d.c[1],cross:true});
+    else if(x.kind==="slow"&&r()<.2*k) A.parts.push({x:q.x-8+r()*16,y:q.y-14,vx:(r()-.5)*.01,vy:.015,life:1100,max:1100,c:d.c[Math.floor(r()*2)]});
+    else if(x.kind==="weaken"&&r()<.15*k) A.parts.push({x:q.x-4+r()*8,y:q.y-10,vx:0,vy:.02,life:700,max:700,c:d.c[2]});
+    else if(x.kind==="haste"&&r()<.25*k) A.parts.push({x:q.x+(w==="you"?-8:8),y:q.y-10+r()*18,vx:w==="you"?-.05:.05,vy:0,life:260,max:260,c:d.c[0]});
+    else if(x.kind==="empower") glow(q.x,q.y,8+Math.round(Math.sin(now/200)*2),d.c[1],.08);
+    if(x.kind==="silence"){const y=q.y-22+Math.round(Math.sin(now/300));for(let i=-2;i<=2;i++){px(q.x+i,y+i,1,1,d.c[1]);px(q.x+i,y-i,1,1,d.c[1]);}glow(q.x,y,4,d.c[2],.1);}
+  }
+}
 function frame(now){
   const dt=Math.min(60,now-last);last=now;A.n++;
   const rnow=now;A.vt+=dt/(A.slow||1);
@@ -1759,7 +1838,7 @@ function frame(now){
       setTimeout(()=>spark(tg.x,tg.y,EL[el].c,16,.09,460),CHARGE+MOT[m][1]);
       if(Math.random()<.4){const ks=Object.keys(REACTIONS),key=ks[Math.floor(Math.random()*ks.length)],r=REACTIONS[key],span=CHARGE+MOT[m][1]+600;
         A.fx.push({type:"react",fx:r.fx,t0:now,dur:span,hit:(CHARGE+MOT[m][1])/span,a:gem("you",true),b:tg,dir:1,c:TAGS[r.lead].c,d:TAGS[key.split("+").find(x=>x!==r.lead)||r.lead].c,seed:Math.random()*1000});}}
-  }else{drawMage("you",now);drawMage("foe",now);}
+  }else{drawMage("you",now);drawMage("foe",now);if(S.st) drawStatus(now,dt);}
   if(S.phase!=="home"&&!calm){const wx=WEATHER[A.theme];if(wx){const k=A.entry?clamp((now-A.entry.t0)/ENTRY_MS,0,1):1;if(Math.random()<wx.r*k*dt/16) A.parts.push(wx.f());}}
   if(A.dim&&now<A.dim.until){const k=Math.min(1,(now-A.dim.from)/300)*Math.min(1,(A.dim.until-now)/300);g.fillStyle="rgba(4,4,12,"+(.45*k).toFixed(3)+")";g.fillRect(0,0,W,H);}
   A.fx=A.fx.filter(f=>drawFx(f,now));
@@ -1796,8 +1875,8 @@ function arrive(){
    so the player can save it (downloads capability) and share it. The replay swaps S for a copy built from snapshots
    taken during the duel (T.rep), and puts the live S back at the end. */
 const RW=720,RH=500,BAR=46,rc=$("rec"),rg=rc.getContext("2d");
-function snapState(){return JSON.parse(JSON.stringify({t:S.t,round:S.round,you:{hp:S.you.hp,maxHp:S.you.maxHp,mana:S.you.mana,maxMana:S.you.maxMana,cast:S.you.cast},foe:{hp:S.foe.hp,maxHp:S.foe.maxHp,mana:S.foe.mana,maxMana:S.foe.maxMana,cast:S.foe.cast},field:S.field,effects:S.effects}));}
-function applySnap(sn){const c=JSON.parse(JSON.stringify(sn));S.t=c.t;S.round=c.round;Object.assign(S.you,c.you);Object.assign(S.foe,c.foe);S.field=c.field;S.effects=c.effects;}
+function snapState(){return JSON.parse(JSON.stringify({t:S.t,round:S.round,you:{hp:S.you.hp,maxHp:S.you.maxHp,mana:S.you.mana,maxMana:S.you.maxMana,cast:S.you.cast},foe:{hp:S.foe.hp,maxHp:S.foe.maxHp,mana:S.foe.mana,maxMana:S.foe.maxMana,cast:S.foe.cast},field:S.field,effects:S.effects,st:S.st}));}
+function applySnap(sn){const c=JSON.parse(JSON.stringify(sn));S.t=c.t;S.round=c.round;Object.assign(S.you,c.you);Object.assign(S.foe,c.foe);S.field=c.field;S.effects=c.effects;if(c.st) S.st=c.st;}
 const PIXF='"Silkscreen","Press Start 2P",monospace';
 function recText(s,x,y,size,color,align){
   rg.font="700 "+size+"px "+PIXF;rg.textAlign=align||"center";rg.textBaseline="middle";
@@ -1999,6 +2078,7 @@ function renderLive(force){
   for(const w of ["you","foe"]){
     const m=S[w];
     $("hp-"+w).textContent=m.hp+"/"+m.maxHp;setBar("hpb-"+w,m.hp,m.maxHp);
+    {const sx=$("sx-"+w),list=(S.st&&S.st[w])||[],key=list.map(x=>x.kind+x.n+x.rounds).join()+LANG;if(sx.dataset.k!==key){sx.dataset.k=key;sx.innerHTML=list.map(x=>`<i style="color:${STATUS[x.kind].c[1]}">${esc(tx("stChip",x.kind,x.n,x.rounds))}</i>`).join("");}}
     $("mp-"+w).textContent=tx("manaF",Math.floor(m.mana));setBar("mpb-"+w,m.mana,m.maxMana);
     const c=m.cast;let st="",prog=0;
     if(w==="you"){
