@@ -105,6 +105,8 @@ button.chip{background:transparent;cursor:pointer}
 .arrive b{display:block;font:400 clamp(24px,7.5vw,42px)/1 var(--display);color:var(--chalk);letter-spacing:.04em}
 .arrive i{display:block;font:italic 400 clamp(15px,4.2vw,21px)/1.3 var(--voice);color:var(--brass);margin-top:4px}
 @keyframes arrive{0%{opacity:0;letter-spacing:.35em}18%{opacity:1;letter-spacing:.04em}80%{opacity:1}100%{opacity:0}}
+.stage.kill .hud{opacity:0}.stage.page .hud{background:linear-gradient(rgba(10,6,18,.8),rgba(10,6,18,.55) 70%,rgba(10,6,18,0));padding-bottom:12px}.hud{transition:opacity .4s}
+.killcap{position:absolute;left:0;right:0;bottom:2.5%;text-align:center;color:#ffd27a;text-shadow:1px 1px 0 #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;animation:sayIn 4s ease forwards}
 .slowbadge{position:absolute;left:8px;bottom:8px;color:var(--tide);text-shadow:1px 1px 0 #000}
 
 /* mages */
@@ -282,6 +284,10 @@ details .body b{color:var(--chalk);font-weight:500}
      The player's father plays in Russian (19 Nov 2026), so every new piece of text needs its Russian too, and Russian must fit at phone width.
    - Layout (19 Nov 2026): life and mana sit on the arena as a HUD, and the Cast / Keep channelling button sits directly under the arena.
      Keep the main button there.
+   - Kill cam (killCam): the batch that holds a fatal hit plays live in slow motion (A.slow) behind a letterbox, and the fatal
+     impact holds the frame (A.freeze, on the real clock A.rt, which only frame() advances) with a one-frame inverted impact.
+     Lethal cataclysms also draw drawCata over their motion. When a rival exploits a condition the player made (cast event
+     "stolen"), the rival says SAY[id][3].
    - The finale (startFinale): when a duel ends, its last moves replay as a recorded film (letterbox, slow motion via A.slow and the
      virtual clock A.vt, anime cut-ins, impact frames) that the player can save. Animations must read time from A.vt, never performance.now().
    - Two homes: the Claude artifact, and an ordinary website on the owner's Vercel (project "unwritten-duel") where WEB is true and
@@ -289,6 +295,11 @@ details .body b{color:var(--chalk);font-weight:500}
      A player may instead save their OWN key (OpenRouter sk-or-, Gemini AIza, Claude sk-ant-) in localStorage "ud.key"; it goes from their
      browser straight to that service (KEY_CALL), never to /api/referee. OpenRouter's free router (openrouter/free) is the free path that
      works from Russia; keep the RU/EN step-by-step key help (TX keyHelp) accurate.
+   - The boss has two phases (startPhase2): at half life the Unwritten tears the page (event "phase", phaseFx/drawTear), the hall becomes
+     THEMES.page, its palette becomes BOSS.phase2.pal and it fights from BOSS.book2. S.bossPhase is 0 or 1. Mages kneel below a quarter
+     life and the victor raises the staff (drawMage).
+   - The Moonlit Altar (phase "rest", REST_AT, takeRest, drawShrine): once per climb, before floor REST_AT, the player picks full
+     life, the offered relic (S.restRelic) or REST_MOTES motes. S.rested marks it used.
    - Drop-in art: PNG sheets published as art/<id>.png replace the drawn
      sprites (see ART below for the frame layout). Never delete art files.
    DIRECTION FROM THE PLAYER:
@@ -310,18 +321,20 @@ details .body b{color:var(--chalk);font-weight:500}
      changes (up to roughly 400 changed lines). After that date, one small
      change per run.
    BACKLOG (take from the top, remove when done, add new ideas at the end):
-     1. Finishing blows: the spell that ends a duel plays in slow motion with a letterbox and a held frame.
-     2. Rivals steal combinations: when the player sets up a condition, rivals sometimes exploit it first, and say a line about it.
-     3. The Unwritten as a real boss: a second phase at half life with a new arena state and a stronger book.
-     4. Mage body language: recoil on heavy hits, kneeling at low life, a raised staff for the victor.
-     5. A sixth rival with a new temperament, palette, hat (HATS, HAT_OF) and a book built around light and wind.
-     6. A mid-climb rest floor: choose heal, relic, or motes.
-     7. Endless mode after floor 8 with a best-depth record.
-     8. A daily seeded climb so every player meets the same ladder.
-     9. Reaction codex: the sanctum shows every reaction from REACTIONS as a silhouette until the player first triggers it, then its name and pixel effect (saved as a new M field with a default in newMeta()).
-    10. Leitmotifs: each rival gets a short four-note motif in their hall's mode that the generative score (MUS) weaves in while they channel, and a triumphant variation of the player's own motif after a grand combination.
+     1. Endless mode after floor 8 with a best-depth record.
+     2. A daily seeded climb so every player meets the same ladder.
+     3. Reaction codex: the sanctum shows every reaction from REACTIONS as a silhouette until the player first triggers it, then its name and pixel effect (saved as a new M field with a default in newMeta()).
+     4. Leitmotifs: each rival gets a short four-note motif in their hall's mode that the generative score (MUS) weaves in while they channel, and a triumphant variation of the player's own motif after a grand combination.
+     5. Signature spells: a grimoire spell that has landed a finishing blow gets a gold edge on its chip and its own title card in the kill cam the next time it ends a duel.
+     6. Ink wounds: in the Unwritten's second phase, every condition the player creates is drawn as handwriting across the ruled sky, and the boss can "cross out" one each round unless the player's spell is inspired (4+).
+     7. Weather duels: when both mages have a condition of their own on the field, the hall's sky visibly splits between their colours, and a grand combination that uses one condition from each side lands as a "Stolen Sky" with its own title card.
+     8. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-20",t:"Halfway up the tower you now reach the Moonlit Altar, a quiet shrine with a cold blue flame, where you choose to recover all your life, take one more relic, or meditate for 40 motes before the next rival.",ru:"На полпути вверх по башне теперь ждёт Лунный алтарь — тихое место с холодным синим пламенем, где перед следующим соперником можно восстановить всю жизнь, взять ещё одну реликвию или медитировать ради 40 искр."},
+  {d:"2026-11-20",t:"A new rival climbs the tower: Aurel Vane, the Gale Saint, who duels on a terrace above the clouds at dawn, blinds you with light and threads it with wind into a Solar Gale. Dawn light and wind now react for anyone who joins them.",ru:"В башне новый соперник: Аурель Вейн, святой ветров. Он сражается на террасе над облаками на рассвете, ослепляет светом и сплетает его с ветром в Солнечный вихрь. Свет и ветер теперь вступают в реакцию у любого, кто их соединит."},
+  {d:"2026-11-19",t:"The Unwritten now has a second phase: at half life it tears the page, the hall turns into a ruled sheet under a black sun, and it fights on from a darker book, but the ink and blank page it leaves behind make an Eclipse for whoever joins them first. Mages now kneel when nearly beaten, reel from heavy blows and raise the staff in victory.",ru:"У Ненаписанного появилась вторая фаза: на половине жизни он рвёт страницу, зал превращается в разлинованный лист под чёрным солнцем, и он сражается дальше по более тёмной книге. Но чернила и чистый лист, которые он оставляет, дают Затмение тому, кто первым их соединит. Маги теперь падают на колено, когда почти побеждены, отшатываются от тяжёлых ударов и поднимают посох в победе."},
+  {d:"2026-11-19",t:"Finishing blows: the spell that ends a duel now plays in slow motion behind a letterbox and freezes on the moment of impact. Cataclysms fill the arena with their own pillars of fire, tidal walls and thorns, and rivals gloat when they turn a condition you made against you.",ru:"Добивающие удары: заклинание, которое заканчивает дуэль, теперь идёт в замедлении, в кадре с чёрными полосами, и застывает в миг удара. Катаклизмы заполняют арену своими столпами огня, стенами воды и шипами, а соперники злорадствуют, когда обращают ваше условие против вас."},
   {d:"2026-11-19",t:"The duel now has music: a score in the mode of each hall that stays quiet at rest, rises with drums and strings as either mage gathers power or life runs low, and swells with brass on every combination. The Sound chip turns it off with everything else.",ru:"У дуэли появилась музыка: в своём ладу для каждого зала. В покое она тихая, а когда маг копит силу или жизнь на исходе, вступают барабаны и струнные; на каждой комбинации звучит медь. Кнопка «Звук» выключает её вместе со всем остальным."},
   {d:"2026-11-19",t:"Lasting magic: spells can now burn, poison, silence, slow or weaken your rival over several rounds, or mend, quicken and empower you. Each effect has its own look on the mage and shows under the life bar. Rivals fight with them too.",ru:"Долгая магия: заклинания теперь могут поджигать, отравлять, лишать голоса, замедлять или ослаблять соперника на несколько раундов, а вас — лечить, ускорять и усиливать. У каждого эффекта свой вид на маге, и он показан под полосой жизни. Соперники тоже ими пользуются."},
   {d:"2026-11-19",t:"Wild magic. Claude now rates how inspired each spell is, and inspiration multiplies its power up to two and a half times. Inspired spells can surge with wild magic. Describe something that would plainly end a mage and it becomes a cataclysm: fatal if it lands, but fragile while it gathers.",ru:"Дикая магия. Claude теперь оценивает вдохновение каждого заклинания, и оно умножает силу до двух с половиной раз. Вдохновенные заклинания могут вскипеть дикой магией. Опишите то, что явно уничтожит мага, и это станет катаклизмом: смертельным, если дойдёт, но хрупким, пока собирается."},
@@ -350,6 +363,10 @@ const RU={
   "Sister Moth":"Сестра Мотылёк","of the Hollow Lantern":"из Пустого Фонаря","Turns whatever you leave on the floor against you.":"Обращает против вас всё, что вы оставили на поле.",
   "Old Hemlock":"Старый Болиголов","the Rootwarden":"страж корней","Roots you in place, mends, and waits for the kill.":"Пускает корни, лечится и ждёт, когда можно добить.",
   "Pyra Kesh":"Пира Кеш","the Ash Oracle":"пепельный оракул","Channels enormous fire. Break it or burn.":"Копит чудовищное пламя. Сорвите заклинание — или сгорите.",
+  "Aurel Vane":"Аурель Вейн","the Gale Saint":"святой ветров","Blinds you with dawn, then rides the wind through the glare.":"Ослепляет рассветом, а потом проносится ветром сквозь сияние.",
+  "Dawn Shutters":"Ставни рассвета","Crosswind":"Боковой ветер","Searing Ray":"Палящий луч","Sunwind Lance":"Копьё солнечного ветра","Halo Ward":"Щит нимба","Glare":"Ослепление","Zenith Fall":"Падение с зенита",
+  "Blinding dawn":"Слепящий рассвет","Sky current":"Небесное течение","Solar Gale":"Солнечный вихрь",
+  "The wind has already chosen a side.":"Ветер уже выбрал сторону.","You blink. I am elsewhere.":"Вы моргнули. Меня уже нет.","Even the sun sets.":"Даже солнце садится.","Your light, my lance.":"Твой свет — моё копьё.",
   "The Unwritten":"Ненаписанный","who signs no spell":"не подписавший ни одного заклинания","Every element. Every trick that got you here.":"Все стихии. Все приёмы, что привели вас сюда.",
   "Rising Tide":"Прилив","Frost Lock":"Ледяные оковы","Glacier Spear":"Ледниковое копьё","Tide Ward":"Щит прилива","Drowning Moon":"Тонущая луна","Undertow":"Подводное течение",
   "Cinder Rain":"Дождь из углей","Forge Breath":"Дыхание горна","Bellows":"Мехи","Firestorm":"Огненная буря","Hammerfall":"Удар молота","Spark Snap":"Искра",
@@ -389,7 +406,11 @@ const RU={
   "Leave me something to play with.":"Оставьте мне что-нибудь поиграть.","Was that the spell you meant?":"Вы именно это заклинание имели в виду?","The lantern goes dark.":"Фонарь гаснет.",
   "Sit. Grow roots. Lose slowly.":"Садись. Пусти корни. Проигрывай медленно.","Saplings break in the wind.":"Саженцы ломаются на ветру.","Even old trees fall.":"Даже старые деревья падают.",
   "I have seen how you burn.":"Я видела, как ты горишь.","Ash remembers everything.":"Пепел помнит всё.","This was not in the embers.":"Этого не было в углях.",
-  "You wrote your way here. Now be erased.":"Ты дописался до меня. Теперь будь стёрт.","Every word of yours, unwritten.":"Каждое твоё слово — ненаписанное.","Then write the ending yourself.":"Тогда допиши конец сам."
+  "You wrote your way here. Now be erased.":"Ты дописался до меня. Теперь будь стёрт.","Every word of yours, unwritten.":"Каждое твоё слово — ненаписанное.","Then write the ending yourself.":"Тогда допиши конец сам.",
+  "Ink Tide":"Чернильный прилив","Blank Page":"Чистый лист","Last Eclipse":"Последнее затмение","Erasure":"Стирание","Margin Ward":"Щит полей","The Final Word":"Последнее слово",
+  "Spilled ink":"Пролитые чернила","Blank page":"Чистый лист","Enough. I will write you out myself.":"Довольно. Я сам вычеркну тебя.",
+  "Thank you for the water.":"Спасибо за воду.","Your fire burns for me now!":"Твой огонь теперь горит за меня!","You left this for me. How kind.":"Вы оставили это мне. Как мило.",
+  "Whatever you plant, I harvest.":"Что посеешь — пожну я.","I saw you build this. I saw it fall on you.":"Я видела, как ты это строишь. И как это рушится на тебя.","Your words. My spell.":"Твои слова. Моё заклинание."
 };
 const L=s=>LANG==="ru"&&RU[s]?RU[s]:s;
 const q=s=>LANG==="ru"?"«"+s+"»":s;
@@ -407,6 +428,7 @@ const TX={
   combo:g=>g?"Grand combination":"Combination",castBy:(mine,r,s)=>mine?"Your "+s:r+"'s "+s,weakened:" (weakened)",
   flavour:(mine,r,s,el,tr,dmg)=>(mine?"Your ":r+"'s ")+s+" "+(dmg?(VERB[el]||VERB.void)[tr]+" "+(mine?r:"you"):"takes shape")+".",
   doubleFall:"A double fall",doubleFallText:"Both of you go down. You are the one who gets back up.",
+  phaseT:"The page tears",phaseLog:"The Unwritten tears the page. Its spell is erased, the floor is wiped, and spilled ink meets a blank page. Whoever joins them first casts an Eclipse.",
   tiers:["Cantrip","Spell","Grand working","Cataclysm"],ranks:["Apprentice","Apprentice","Adept","Adept","Magus","Magus","Archmage","Archmage","Heir of the Unwritten"]
  },
  ru:{
@@ -422,11 +444,12 @@ const TX={
   combo:g=>g?"Великая комбинация":"Комбинация",castBy:(mine,r,s)=>mine?"Вы: «"+s+"»":r+": «"+s+"»",weakened:" (ослаблено)",
   flavour:(mine,r,s,el,tr,dmg)=>"«"+s+"» "+(dmg?["задевает","бьёт","сокрушает","испепеляет"][tr]+" "+(mine?"противника":"вас"):"обретает форму")+".",
   doubleFall:"Двойное падение",doubleFallText:"Вы оба падаете. Встаёте — вы.",
+  phaseT:"Страница рвётся",phaseLog:"Ненаписанный рвёт страницу. Его заклинание стёрто, поле очищено, пролитые чернила встречаются с чистым листом. Кто первым соединит их — сотворит Затмение.",
   tiers:["Заговор","Заклинание","Великое чародейство","Катаклизм"],ranks:["Ученик","Ученик","Адепт","Адепт","Маг","Маг","Архимаг","Архимаг","Наследник Ненаписанного"]
  }
 };
 function tx(k,...a){const f=(TX[LANG]&&TX[LANG][k]!==undefined?TX[LANG][k]:TX.en[k]);return typeof f==="function"?f(...a):f;}
-const BEAT=600,ROUND=1500,FLOORS=8;
+const BEAT=600,ROUND=1500,FLOORS=8,REST_AT=5;
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const num=(v,lo,hi)=>clamp(Math.round(Number(v)||0),lo,hi);
 const str=(v,n)=>String(v==null?"":v).replace(/\s+/g," ").trim().slice(0,n);
@@ -458,7 +481,8 @@ const REACTIONS={
   "light+shadow":{name:"Eclipse",fx:"eclipse",lead:"light"},
   "fire+ice":{name:"Steam Burst",fx:"converge",lead:"fire"},
   "fire+water":{name:"Scalding Steam",fx:"converge",lead:"water"},
-  "ice+storm":{name:"Hailstorm",fx:"arc",lead:"ice"}
+  "ice+storm":{name:"Hailstorm",fx:"arc",lead:"ice"},
+  "light+wind":{name:"Solar Gale",fx:"twister",lead:"light"}
 };
 function reactionOf(tags){
   const t=[...new Set(tags)];
@@ -468,7 +492,7 @@ function reactionOf(tags){
 const FORMS=["attack","ward","break","heal","field"],SHAPES=["bolt","beam","rain","wave","burst","curse"];
 /* How a spell moves on screen. The referee picks one for every written spell; see drawMotion. */
 const MOTIONS=["bolt","volley","beam","lightning","meteor","rain","wave","pillar","spikes","vortex","chains","orb","burst","curse","swarm","wall","dome","aura"];
-const RIVAL_MOTION={"Rising Tide":"wave","Frost Lock":"spikes","Glacier Spear":"beam","Tide Ward":"wall","Drowning Moon":"wave","Undertow":"chains","Cinder Rain":"meteor","Forge Breath":"beam","Bellows":"wave","Firestorm":"vortex","Hammerfall":"meteor","Spark Snap":"lightning","Lantern Gloom":"curse","Turnabout":"curse","Moth Veil":"dome","Steal Wick":"swarm","Pale Lance":"beam","Hush":"chains","Deep Roots":"spikes","Strangleroot":"chains","Bark Skin":"wall","Old Sap":"aura","Briar Volley":"volley","Wildwood Maw":"spikes","Heat Haze":"wave","Ash Fall":"rain","Ember Sight":"dome","Cinder Dart":"bolt","Oracle Pyre":"pillar","Gathering Storm":"lightning","Black Rain":"rain","Drowned Lightning":"lightning","Rewrite":"vortex","Null Ward":"dome","Severance":"chains","Unmaking":"orb"};
+const RIVAL_MOTION={"Rising Tide":"wave","Frost Lock":"spikes","Glacier Spear":"beam","Tide Ward":"wall","Drowning Moon":"wave","Undertow":"chains","Cinder Rain":"meteor","Forge Breath":"beam","Bellows":"wave","Firestorm":"vortex","Hammerfall":"meteor","Spark Snap":"lightning","Lantern Gloom":"curse","Turnabout":"curse","Moth Veil":"dome","Steal Wick":"swarm","Pale Lance":"beam","Hush":"chains","Deep Roots":"spikes","Strangleroot":"chains","Bark Skin":"wall","Old Sap":"aura","Briar Volley":"volley","Wildwood Maw":"spikes","Heat Haze":"wave","Ash Fall":"rain","Ember Sight":"dome","Cinder Dart":"bolt","Oracle Pyre":"pillar","Gathering Storm":"lightning","Black Rain":"rain","Drowned Lightning":"lightning","Rewrite":"vortex","Null Ward":"dome","Severance":"chains","Unmaking":"orb","Ink Tide":"wave","Blank Page":"dome","Last Eclipse":"beam","Erasure":"chains","Margin Ward":"wall","The Final Word":"meteor","Dawn Shutters":"pillar","Crosswind":"wave","Searing Ray":"beam","Sunwind Lance":"vortex","Halo Ward":"dome","Glare":"burst","Zenith Fall":"meteor"};
 const TIERNAME=["Cantrip","Spell","Grand working","Cataclysm"];/* English names; the page uses tx("tiers") */
 const tier=p=>p<=2?0:p<=5?1:p<=8?2:3;
 const VERB={ember:["stings","scorches","blasts","engulfs"],tide:["splashes","lashes","crashes over","drowns"],thorn:["pricks","tears at","impales","devours"],void:["nips","cuts","pierces","unmakes"]};
@@ -536,7 +560,17 @@ const RIVALS=[
     {name:"Firestorm",el:"ember",shape:"burst",form:"attack",power:6,damage:24,exploits:["fire","wind"]},
     {name:"Ember Sight",el:"ember",form:"ward",power:3,absorb:18},
     {name:"Cinder Dart",el:"ember",shape:"bolt",form:"attack",power:2,damage:11},
-    {name:"Oracle Pyre",el:"ember",shape:"beam",form:"attack",power:9,damage:52}]}
+    {name:"Oracle Pyre",el:"ember",shape:"beam",form:"attack",power:9,damage:52}]},
+  /* Aurel Vane: quick and slippery. Lays down dawn light and a sky current, then threads them into a Solar Gale; blinds (weakens) to break you. */
+  {id:"vane",name:"Aurel Vane",epithet:"the Gale Saint",blurb:"Blinds you with dawn, then rides the wind through the glare.",theme:"sky",pal:{h:"#e0b24a",H:"#9a7424",r:"#f2ead2",R:"#bdb294",t:"#ffe9a8",s:"#e6c3a0"},react:700,brk:.45,wrd:.2,mnd:.1,big:.25,
+   book:[
+    {name:"Dawn Shutters",el:"void",shape:"wave",form:"field",power:2,damage:4,creates:[{tag:"light",name:"Blinding dawn"}],palette:["#ffffff","#ffe9a8","#e0b24a"]},
+    {name:"Crosswind",el:"void",shape:"wave",form:"field",power:3,damage:6,lasting:[{kind:"haste",rounds:1}],creates:[{tag:"wind",name:"Sky current"}],palette:["#ffffff","#cfe0e6","#7fa6c0"]},
+    {name:"Searing Ray",el:"ember",shape:"beam",form:"attack",power:4,damage:18,exploits:["light"],palette:["#ffffff","#fff1a8","#e08a2a"]},
+    {name:"Sunwind Lance",el:"void",shape:"beam",form:"attack",power:6,damage:26,exploits:["light","wind"],palette:["#ffffff","#ffe9a8","#7fd0ff"]},
+    {name:"Halo Ward",el:"void",form:"ward",power:4,absorb:24,palette:["#ffffff","#ffe9a8","#c08a2a"]},
+    {name:"Glare",el:"void",form:"break",power:2,damage:4,breaks:true,lasting:[{kind:"weaken",rounds:1}],palette:["#ffffff","#fff8d8","#e0b24a"]},
+    {name:"Zenith Fall",el:"void",shape:"burst",form:"attack",power:8,damage:44,palette:["#ffffff","#ffd27a","#7fd0ff"]}]}
 ];
 const BOSS={id:"unwritten",name:"The Unwritten",epithet:"who signs no spell",blurb:"Every element. Every trick that got you here.",theme:"void",boss:true,pal:{h:"#e9e4d6",H:"#a9a290",r:"#f6f2e6",R:"#bdb6a2",t:"#c9a2ff",s:"#8f86a8"},react:750,brk:.4,wrd:.4,mnd:.2,big:.4,
   book:[
@@ -546,7 +580,17 @@ const BOSS={id:"unwritten",name:"The Unwritten",epithet:"who signs no spell",blu
     {name:"Rewrite",el:"void",shape:"curse",form:"attack",power:4,damage:12,drain:4,lasting:[{kind:"weaken",rounds:1}],exploits:["*"]},
     {name:"Null Ward",el:"void",form:"ward",power:5,absorb:32},
     {name:"Severance",el:"void",form:"break",power:3,damage:6,breaks:true},
-    {name:"Unmaking",el:"void",shape:"beam",form:"attack",power:10,damage:58}]};
+    {name:"Unmaking",el:"void",shape:"beam",form:"attack",power:10,damage:58}],
+  /* Second phase (startPhase2, at half life): the page tears, the hall becomes "page", and this book replaces the first. */
+  phase2:{theme:"page",react:700,mul:1.3,regen:4.5,pal:{h:"#1a1424",H:"#0b0712",r:"#2e2440",R:"#1a1424",t:"#ffffff",s:"#e9e4d6"}},
+  book2:[
+    {name:"Ink Tide",el:"void",shape:"wave",form:"field",power:3,damage:8,creates:[{tag:"shadow",name:"Spilled ink"}]},
+    {name:"Blank Page",el:"void",shape:"wave",form:"field",power:3,damage:6,creates:[{tag:"light",name:"Blank page"}]},
+    {name:"Last Eclipse",el:"void",shape:"beam",form:"attack",power:6,damage:30,lasting:[{kind:"weaken",rounds:1}],exploits:["light","shadow"]},
+    {name:"Rewrite",el:"void",shape:"curse",form:"attack",power:4,damage:12,drain:4,lasting:[{kind:"weaken",rounds:1}],exploits:["*"]},
+    {name:"Margin Ward",el:"void",form:"ward",power:5,absorb:34},
+    {name:"Erasure",el:"void",form:"break",power:3,damage:8,breaks:true,lasting:[{kind:"slow",rounds:1}]},
+    {name:"The Final Word",el:"void",shape:"beam",form:"attack",power:10,damage:64}]};
 const UPGRADES=[
   {id:"vit",name:"Vitality",text:"+10 maximum life",costs:[30,50,80,120,170]},
   {id:"well",name:"Wellspring",text:"+10 maximum mana",costs:[30,55,85,125]},
@@ -560,7 +604,7 @@ function fresh(){
   return {v:2,phase:"home",floor:1,t:0,round:1,roundEnd:0,ladder:[],relics:[],choices:[],earned:0,
     you:{hp:100,maxHp:100,mana:60,maxMana:100,regen:4,cast:null,focusUsed:false},
     foe:{hp:60,maxHp:60,mana:60,maxMana:100,regen:4.5,cast:null,nextAt:1500},
-    effects:[],field:[],log:[],ev:[],uses:{},queued:null,foeMul:1,draftText:""};
+    effects:[],field:[],log:[],ev:[],uses:{},queued:null,foeMul:1,draftText:"",bossPhase:0,rested:false,restRelic:""};
 }
 let S=fresh(),M=newMeta();
 const has=id=>S.relics.includes(id);
@@ -570,7 +614,22 @@ function rival(){return S.floor>=FLOORS?BOSS:(RIVALS.find(r=>r.id===S.ladder[S.f
 const ward=who=>S.effects.find(e=>e.owner===who&&e.absorb>0);
 function wardMult(wel,sel){if(EL[wel]&&EL[wel].beats===sel) return 2;if(EL[sel]&&EL[sel].beats===wel) return .5;return 1;}
 const BOOKS={};
-function bookOf(R){return BOOKS[R.id]||(BOOKS[R.id]=R.book.map(b=>normalize(Object.assign({motion:RIVAL_MOTION[b.name]},b),false)));}
+const p2=R=>!!(R&&R.boss&&R.book2&&S.bossPhase);
+function bookOf(R){const k=R.id+(p2(R)?"2":"");return BOOKS[k]||(BOOKS[k]=(p2(R)?R.book2:R.book).map(b=>normalize(Object.assign({motion:RIVAL_MOTION[b.name]},b),false)));}
+function rivalTheme(R){return p2(R)?R.phase2.theme:R.theme;}
+/* The Unwritten's second phase: at half life it tears the page. Its channel is erased, the floor is wiped and left with ink and a blank page
+   (an Eclipse waiting for whoever is bolder), its wounds stop burning, and it fights on from book2, faster and harder. */
+function startPhase2(){
+  const R=rival();if(!R.boss||!R.book2||S.bossPhase||S.foe.hp<=0||S.foe.hp>S.foe.maxHp/2) return;
+  S.bossPhase=1;const P=R.phase2,ev=[{t:"phase",who:"foe"}];
+  if(S.foe.cast){S.foe.cast=null;}
+  S.foeMul=P.mul;S.foe.regen=P.regen;S.foe.mana=Math.max(S.foe.mana,30);S.foe.nextAt=S.t+P.react;
+  if(S.st) S.st.foe=S.st.foe.filter(x=>STATUS[x.kind].on==="self");
+  S.field=[];
+  for(const [tag,name] of [["shadow","Spilled ink"],["light","Blank page"]]){addField(tag,name,"foe");ev.push({t:"field",tag,name});}
+  pushLog(tx("phaseT"),tx("phaseLog"));
+  S.ev.push(ev);if(S.ev.length>12) S.ev.shift();
+}
 /* Turn anything (the referee's JSON, a sigil, a rival's spell) into a spell package that fits its power. */
 const INSP_MULT=[0,.75,1,1.4,1.9,2.5];
 /* Lasting magic. "rival" kinds land on the target, "self" kinds on the caster. Cost is budget points: per point of n per round, or flat per round. */
@@ -684,7 +743,7 @@ function startRun(){
 }
 function startDuel(){
   const R=rival();
-  S.phase="duel";S.t=0;S.effects=[];S.field=[];S.ev=[];S.uses={};S.queued=null;S.st={you:[],foe:[]};S.silEnd={};S.tickRound=1;
+  S.phase="duel";S.bossPhase=0;S.t=0;S.effects=[];S.field=[];S.ev=[];S.uses={};S.queued=null;S.st={you:[],foe:[]};S.silEnd={};S.tickRound=1;
   S.you.cast=null;S.you.focusUsed=false;S.you.mana=Math.min(S.you.maxMana,60+10*lvl("kindle"));
   const hp=R.boss?240:70+S.floor*14;
   S.foe={hp,maxHp:hp,mana:60,maxMana:100,regen:3.5+.25*S.floor,cast:null,nextAt:0,gather:false};
@@ -726,7 +785,7 @@ function land(who){
   let k=used.length;if(k&&mine&&has("prism")) k++;k=Math.min(3,k);
   const grand=k>=2,mult=1+.5*k;
   if(used.length) S.field=S.field.filter(f=>!used.includes(f));
-  ev.push({t:"cast",who,insp:mine&&c.written?c.insp:0,lethal:!!c.lethal,form:c.form,shape:c.shape,motion:c.motion,palette:c.palette,count:c.count,el:c.el,power:c.power,name:c.name,combo:k,tags:used.map(f=>f.tag),react:reactionOf(used.map(f=>f.tag))});
+  ev.push({t:"cast",who,insp:mine&&c.written?c.insp:0,lethal:!!c.lethal,form:c.form,shape:c.shape,motion:c.motion,palette:c.palette,count:c.count,el:c.el,power:c.power,name:c.name,combo:k,tags:used.map(f=>f.tag),react:reactionOf(used.map(f=>f.tag)),stolen:used.some(f=>f.by&&f.by!==who)});
   const bits=[];
   const surge=mine&&c.written?rollSurge(c):null,sm=surge==="overcharge"?1.6:1;
   if(surge){ev.push({t:"surge",who,kind:surge});bits.push(tx("surgeLog",surge));}
@@ -775,7 +834,7 @@ function land(who){
   const flavour=(mine&&c.impact?c.impact:tx("flavour",mine,L(R.name),sn,c.el,tier(c.power),c.damage>0))+(S[o].hp<=0?" "+tx("fatalLog"):"");
   pushLog(tx("castBy",mine,L(R.name),sn)+(c.weak?tx("weakened"):""),head+flavour+(bits.length?" "+cap(bits.join(", "))+".":""));
   S.ev.push(ev);if(S.ev.length>12) S.ev.shift();
-  if(!mine) S.foe.nextAt=S.t+R.react*(.5+Math.random()*.8);
+  if(!mine) S.foe.nextAt=S.t+(p2(R)?R.phase2.react:R.react)*(.5+Math.random()*.8);
 }
 /* Wild magic: the more inspired (and the fresher) a written spell, the likelier it surges. */
 function rollSurge(c){
@@ -817,6 +876,7 @@ function foeThink(){
 function gain(n){M.motes+=n;M.life+=n;S.earned+=n;}
 function checkEnd(){
   if(S.phase!=="duel") return;
+  startPhase2();
   if(S.you.hp<=0&&S.foe.hp<=0){S.you.hp=1;pushLog(tx("doubleFall"),tx("doubleFallText"));}
   if(S.foe.hp<=0){
     S.you.cast=null;S.foe.cast=null;S.queued=null;
@@ -841,6 +901,21 @@ function update(dt){
 function takeRelic(id){
   addRelic(id);S.floor++;
   S.you.hp=clamp(S.you.hp+30,0,S.you.maxHp);
+  /* Halfway up, the climb pauses once at a shrine (phase "rest") before the next rival. */
+  if(S.floor===REST_AT&&!S.rested){
+    S.phase="rest";S.field=[];S.effects=[];S.st={you:[],foe:[]};S.you.cast=null;S.foe.cast=null;S.queued=null;
+    const r=shuffled(RELICS.filter(x=>!has(x.id)))[0];S.restRelic=r?r.id:"";return;
+  }
+  startDuel();
+}
+const REST_MOTES=40;
+/* The shrine offers one of three: the whole of your life back, one more relic, or motes for the sanctum. */
+function takeRest(kind){
+  if(S.phase!=="rest") return;
+  S.rested=true;
+  if(kind==="heal") S.you.hp=S.you.maxHp;
+  else if(kind==="relic"&&S.restRelic&&!has(S.restRelic)) addRelic(S.restRelic);
+  else if(kind==="motes") gain(REST_MOTES);
   startDuel();
 }
 /*ENGINE-END*/
@@ -895,6 +970,9 @@ Object.assign(TX.en,{
   focusBtn:n=>"Focus +"+n,watchRound:"Watch the round play out.",holdOn:n=>"You are channelling "+n+". Hold on, or a hard hit may break it.",chosen:"Your rival has already chosen. Both spells begin together.",
   chipPower:(p,m)=>"Power "+p+" · "+m+" mana",chipUses:s=>" · uses "+s,chipMakes:s=>" · makes "+s,
   sigDmg:n=>n+" damage",sigWard:n=>"ward "+n,sigBreak:"breaks casting",sigMana:n=>" · "+n+" mana",
+  restTitle:"Halfway up the tower, a moonlit altar. The next rival can wait.",shrineName:"The Moonlit Altar",shrineSub:"Rest a moment",
+  restHeal:"Rest by the flame",restHealText:(h,m)=>"Recover all your life: "+h+" → "+m+".",restRelic:"Take the offering",restMotes:"Meditate",
+  restMotesText:n=>"Carry "+n+" motes home to the sanctum.",restNone:"The altar is empty: you already hold every relic.",restNext:(f,n)=>"Beyond it, on floor "+f+", "+n+" waits.",
   yields:n=>n+" yields.",rewardNote:(m,f,n)=>"+"+m+" motes. You catch your breath and recover 30 life. Take one relic up to floor "+f+", where "+n+" waits.",
   wonText:"The Unwritten falls silent. The tower is yours.",lostText:(f,n)=>"You fall on floor "+f+". "+n+" keeps the circle.",
   earned:n=>"This climb earned "+n+" motes. They are yours to keep, and so is your grimoire.",toSanctum:"Return to the sanctum",
@@ -911,7 +989,9 @@ Object.assign(TX.en,{
   errKeyCredit:"The key's account has a negative balance. Check it on openrouter.ai.",errRateKey:"The free key's limit is reached for now. Wait a minute, or come back tomorrow. Quick sigils still work.",
   keyHelp:`<ol><li>Open <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a> and press <b>Sign up</b> (top right). Sign up with your email or a Google account. It's free and needs no card.</li><li>Open the keys page: <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> (or the menu at the top right, then <b>Keys</b>).</li><li>Press <b>Create</b> (Create API key), type any name, for example <b>duel</b>, and confirm.</li><li>A long key appears that starts with <code>sk-or-</code>. Press the copy button next to it. It is shown only once.</li><li>Come back here, paste the key into the box above and press <b>Save</b>.</li></ol><p>The key stays only on this device and goes only to OpenRouter. Don't send it to anyone. Free use allows about 50 spells a day; if you see "limit reached", wait a minute.</p><p>A Google Gemini key (starts with <code>AIza</code>, from aistudio.google.com/apikey) works too, but Google doesn't give them out in Russia.</p>`,
   errCode:"That passcode isn't right. Check it and enter it again.",errSetup:"The game's spell referee isn't set up yet. Your grimoire and the quick sigils still work.",
-  codeSaved:"Passcode saved on this device.",shareTitle:"The Unwritten Duel"
+  codeSaved:"Passcode saved on this device.",shareTitle:"The Unwritten Duel",
+  finishingBlow:"Finishing blow",stolenSub:mine=>mine?"Turned on its maker":"Stolen from you",
+  phaseSub:"Second phase · a new book of spells"
 });
 Object.assign(TX.ru,{
   lede:"У вас нет книги заклинаний. Напишите любое заклинание, какое придумаете, — и оно тут же сотворится. Потопы, огонь, грозы и корни остаются на поле боя, и следующее заклинание, которое их использует, может закончить дуэль.",
@@ -958,6 +1038,9 @@ Object.assign(TX.ru,{
   focusBtn:n=>"Фокус +"+n,watchRound:"Смотрите, как разыгрывается раунд.",holdOn:n=>"Вы готовите «"+n+"». Держитесь — сильный удар может сорвать его.",chosen:"Соперник уже сделал выбор. Оба заклинания начнутся вместе.",
   chipPower:(p,m)=>"Сила "+p+" · "+m+" маны",chipUses:s=>" · использует "+s,chipMakes:s=>" · создаёт "+s,
   sigDmg:n=>n+" урона",sigWard:n=>"щит "+n,sigBreak:"срывает колдовство",sigMana:n=>" · "+n+" маны",
+  restTitle:"На полпути вверх по башне — алтарь под луной. Следующий соперник подождёт.",shrineName:"Лунный алтарь",shrineSub:"Передохните",
+  restHeal:"Отдохнуть у огня",restHealText:(h,m)=>"Восстановить всю жизнь: "+h+" → "+m+".",restRelic:"Принять дар",restMotes:"Медитировать",
+  restMotesText:n=>"Унести домой "+n+" искр для святилища.",restNone:"Алтарь пуст: у вас уже есть все реликвии.",restNext:(f,n)=>"Дальше, на этаже "+f+", ждёт "+n+".",
   yields:n=>n+" сдаётся.",rewardNote:(m,f,n)=>"+"+m+" искр. Вы переводите дух и восстанавливаете 30 жизни. Возьмите одну реликвию на этаж "+f+", где ждёт "+n+".",
   wonText:"Ненаписанный умолкает. Башня ваша.",lostText:(f,n)=>"Вы падаете на этаже "+f+". Круг остаётся за: "+n+".",
   earned:n=>"Это восхождение принесло "+n+" искр. Они ваши навсегда, как и гримуар.",toSanctum:"Вернуться в святилище",
@@ -974,7 +1057,9 @@ Object.assign(TX.ru,{
   errKeyCredit:"На счёте этого ключа отрицательный баланс. Проверьте его на openrouter.ai.",errRateKey:"Бесплатный лимит ключа пока исчерпан. Подождите минуту или вернитесь завтра. Быстрые знаки работают.",
   keyHelp:`<ol><li>Откройте сайт <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a> и нажмите <b>Sign up</b> (вверху справа). Зарегистрируйтесь по почте или через аккаунт Google. Это бесплатно, банковская карта не нужна.</li><li>Откройте страницу ключей: <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> (или меню вверху справа, затем <b>Keys</b>).</li><li>Нажмите <b>Create</b> (создать ключ), впишите любое имя, например <b>duel</b>, и подтвердите.</li><li>Появится длинный ключ, который начинается с <code>sk-or-</code>. Нажмите кнопку копирования рядом с ним. Его покажут только один раз.</li><li>Вернитесь сюда, вставьте ключ в поле выше и нажмите <b>Сохранить</b>.</li></ol><p>Ключ хранится только на этом устройстве и уходит только в OpenRouter. Никому его не пересылайте. Бесплатно — около 50 заклинаний в день; если увидите «лимит исчерпан», подождите минуту.</p><p>Ключ Google Gemini (начинается с <code>AIza</code>, сайт aistudio.google.com/apikey) тоже подойдёт, но в России Google такие ключи не выдаёт.</p>`,
   errCode:"Пароль неверный. Проверьте и введите снова.",errSetup:"Судья заклинаний ещё не настроен. Гримуар и быстрые знаки работают.",
-  codeSaved:"Пароль сохранён на этом устройстве.",shareTitle:"Ненаписанная дуэль"
+  codeSaved:"Пароль сохранён на этом устройстве.",shareTitle:"Ненаписанная дуэль",
+  finishingBlow:"Добивающий удар",stolenSub:mine=>mine?"Обращено против создателя":"Украдено у вас",
+  phaseSub:"Вторая фаза · новая книга заклинаний"
 });
 
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1070,7 +1155,7 @@ POWER 1-10 is what the words ask for. Bigger, wider, longer, several effects at 
 INSPIRATION 1-5 is how imaginative the spell is, and it multiplies everything the spell buys (1: x0.75, 2: x1, 3: x1.4, 4: x1.9, 5: x2.5). 1 is flat or generic ("fireball", "I attack"). 2 is a competent ordinary spell. 3 is vivid and specific, with its own image or mechanism. 4 is clever: it plays off the battlefield, the rival's magic or the moment, or works in a surprising way. 5 is astonishing: original, evocative and tactically brilliant at once. Length alone is not inspiration, and an idea the player already used this duel scores lower. Inspired spells also tend to surge with wild magic.
 LETHAL: set lethal true only when the words describe magic that would plainly end a mage outright (unmaking them, dropping a mountain on them, calling down the sun, erasing their name from existence). A lethal spell is a cataclysm: power 8-10, slow to gather and fragile, since any spell that breaks casting shatters it. If it lands unbroken it kills unless a ward saves them. Don't mark lethal for ordinary attacks, however strong.
 BUDGET: a spell of power P has 7*P points times its inspiration. Damage costs 1 point each, ward absorption 0.85, healing 2, mana drained from the rival 1.5, breaking the rival's spell while they channel costs P, and each battlefield condition created costs 4. Spend the whole budget on what the words describe; do not be stingy.
-BATTLEFIELD CONDITIONS use only these tags: water, fire, ice, storm, roots, shadow, wind, light. A spell may CREATE up to 2 when its words make them (a flood creates water, burning the floor creates fire, vines create roots, calling clouds creates storm). A spell may EXPLOIT conditions that are on the field right now when its words use them (lightning through the flood exploits water; igniting the roots exploits roots; a gale that fans the fire exploits fire). Each exploited condition multiplies the spell, and two or more make a Grand Combination that tears through wards and shatters the rival's casting. Exploited conditions are used up. Some pairs react with each other (water+storm, water+ice, fire+wind, storm+wind, fire+roots, water+roots, light+shadow, fire+ice, fire+water, ice+storm), so reward words that use both. Only list a tag in exploits if it is on the field now; a condition this same spell creates cannot be exploited by it.
+BATTLEFIELD CONDITIONS use only these tags: water, fire, ice, storm, roots, shadow, wind, light. A spell may CREATE up to 2 when its words make them (a flood creates water, burning the floor creates fire, vines create roots, calling clouds creates storm). A spell may EXPLOIT conditions that are on the field right now when its words use them (lightning through the flood exploits water; igniting the roots exploits roots; a gale that fans the fire exploits fire). Each exploited condition multiplies the spell, and two or more make a Grand Combination that tears through wards and shatters the rival's casting. Exploited conditions are used up. Some pairs react with each other (water+storm, water+ice, fire+wind, storm+wind, fire+roots, water+roots, light+shadow, fire+ice, fire+water, ice+storm, light+wind), so reward words that use both. Only list a tag in exploits if it is on the field now; a condition this same spell creates cannot be exploited by it.
 LASTING MAGIC: a spell may leave up to 2 lasting effects when its words make them, listed in "lasting" with kind, n (strength per round, for burn, poison and regen only) and rounds. On the rival: burn (n damage a round, up to 3 rounds; costs 0.9 per n per round), poison (n damage a round, up to 5 rounds; 0.75 per n per round), silence (no new spells for 1-2 rounds; 11 per round), slow (their spells take a round longer to gather, up to 3 rounds; 7 per round), weaken (their damage drops by 30%, up to 3 rounds; 7 per round). On the caster: regen (heals n a round, up to 4 rounds; 1.6 per n per round), haste (spells gather a round faster, up to 3 rounds; 8 per round), empower (damage up 35%, up to 3 rounds; 9 per round). Burn and poison ignore wards. Venom, flames that cling, curses that steal the voice, frost that numbs the hands, blessings: reward them with lasting effects.
 ELEMENT, for colour and ward matching: fire and heat are ember; water, ice and mist are tide; plants, beasts, stone and earth are thorn; everything else is void. Ember beats Thorn, Thorn beats Tide, Tide beats Ember.
 FORM is the spell's main job: attack, ward, break (interrupt), heal, or field (mostly creates conditions).
@@ -1221,6 +1306,8 @@ const SFX={
     else if(fx==="eclipse"){tone(44,40,2.2,"sine",.5);[220,277,330,415].forEach((f,i)=>tone(f,f,1.6,"sine",.07,.4+i*.05));tone(1320,1310,.9,"triangle",.08,1.1);}
     else{tone(330,660,.9,"triangle",.1,.1);tone(495,990,.9,"triangle",.08,.15);hiss(.9,.2,500,4000,.1);}
   },
+  kill(){tone(62,22,1.6,"sine",.85);hiss(1.3,.5,3200,70);tone(990,495,1,"triangle",.1,.8);tone(1320,660,1,"triangle",.07,.86);},
+  tear(){MUS.swell(2);hiss(1.8,.45,5200,110);tone(98,24,2.4,"sawtooth",.3);tone(1568,392,1.4,"triangle",.08,.3);[262,311,370,466].forEach((f,i)=>tone(f,f*.98,1.3,"sine",.1,1+i*.13));},
   arrive(boss){hiss(1.7,.22,200,2600);tone(55,110,1.8,"sine",.35);if(boss) tone(41,30,2,"sawtooth",.22);[392,523].forEach((f,i)=>tone(f,f,.8,"triangle",.12,1.1+i*.15));}
 };
 function humUpdate(){
@@ -1239,9 +1326,9 @@ function humUpdate(){
    intensity rises: the filter opens, a pulsing low string, taiko drums, quicker arpeggios. Combinations call MUS.swell
    for a rising brass chord. Everything goes through SND.out, so the Sound chip silences it. Scheduled ahead on the
    audio clock in musicTick(), which frame() calls; nothing here touches game rules. */
-const MODES={court:[0,2,3,5,7,9,10],forge:[0,1,3,5,7,8,10],drowned:[0,2,3,5,7,8,10],thornwood:[0,2,4,5,7,9,10],void:[0,1,3,5,6,8,10]};
-const KEYS={court:146.83,forge:164.81,drowned:110,thornwood:98,void:138.59};
-const PROG={court:[0,5,3,4],forge:[0,1,0,6],drowned:[0,5,6,4],thornwood:[0,6,3,0],void:[0,1,4,1]};
+const MODES={sky:[0,2,4,6,7,9,11],court:[0,2,3,5,7,9,10],forge:[0,1,3,5,7,8,10],drowned:[0,2,3,5,7,8,10],thornwood:[0,2,4,5,7,9,10],void:[0,1,3,5,6,8,10],page:[0,1,4,5,7,8,10]};
+const KEYS={sky:174.61,court:146.83,forge:164.81,drowned:110,thornwood:98,void:138.59,page:123.47};
+const PROG={sky:[0,4,1,4],court:[0,5,3,4],forge:[0,1,0,6],drowned:[0,5,6,4],thornwood:[0,6,3,0],void:[0,1,4,1],page:[0,1,5,4]};
 const MUS={bus:null,step:0,next:0,i:0,sw:0,stepS:60/76/2};
 function musInit(){
   const x=SND.ctx;if(!x||MUS.bus) return;
@@ -1325,7 +1412,11 @@ const THEMES={
   forge:{sky:["#1a0d12","#2e1216","#4a1a17","#6b2a17"],far:"#1c0e10",pil:"#4a3030",hi:"#6d4a40",floor:"#2b2020",line:"#1b1414",moon:"#ffb36b"},
   drowned:{sky:["#06181c","#0a262c","#0f3a40","#16525a"],far:"#082026",pil:"#2c5058",hi:"#4a7a80",floor:"#16292e",line:"#0e1c20",moon:"#c9fff2"},
   thornwood:{sky:["#0c160e","#122216","#1a321c","#274a26"],far:"#0d1a10",pil:"#3a4a2c",hi:"#5a6e40",floor:"#1e2a1c",line:"#131c12",moon:"#eaffb0"},
-  void:{sky:["#0b0714","#150d26","#22133d","#341c5a"],far:"#0e0818",pil:"#3c2f5c",hi:"#5e4b8a",floor:"#1c1628",line:"#120e1a",moon:"#ffffff"}
+  void:{sky:["#0b0714","#150d26","#22133d","#341c5a"],far:"#0e0818",pil:"#3c2f5c",hi:"#5e4b8a",floor:"#1c1628",line:"#120e1a",moon:"#ffffff"},
+  /* the Unwritten's second phase: a torn, ruled page under a black sun */
+  page:{sky:["#f6f2e6","#e9e4d6","#cfc8b4","#a9a290"],far:"#120a1e",pil:"#2a2238",hi:"#4a3e5e",floor:"#1c1628",line:"#0b0712",moon:"#120a1e"},
+  /* Aurel Vane's hall: an open terrace above the clouds at dawn, a full sun and a cloud sea instead of hills */
+  sky:{sky:["#1c2f55","#2f4c7d","#5a7aa8","#9fb4cc","#e8c08a"],far:"#d8dde6",pil:"#bdb294",hi:"#f2ead2",floor:"#4a4240",line:"#2c2624",moon:"#fff1a8"}
 };
 /* Light ambient weather per theme; it fades in as each rival arrives. r = chance per frame, f = one particle. */
 const WEATHER={
@@ -1333,7 +1424,9 @@ const WEATHER={
   forge:{r:.25,f:()=>({x:Math.random()*W,y:FLOOR,vx:(Math.random()-.5)*.01,vy:-.018-Math.random()*.02,life:2600,max:2600,c:Math.random()<.6?"#ff8a3d":"#ffd27a"})},
   thornwood:{r:.06,f:()=>({x:Math.random()*W,y:30+Math.random()*48,vx:(Math.random()-.5)*.012,vy:(Math.random()-.5)*.008,life:2400,max:2400,c:"#eaffb0"})},
   court:{r:.05,f:()=>({x:Math.random()*W,y:Math.random()*FLOOR,vx:.004,vy:.004,life:3000,max:3000,c:"#8f9bb5"})},
-  void:{r:.05,f:()=>({x:Math.random()*W,y:-2,vx:.05,vy:.07,life:1100,max:1100,c:"#ffffff",cross:Math.random()<.3})}
+  void:{r:.05,f:()=>({x:Math.random()*W,y:-2,vx:.05,vy:.07,life:1100,max:1100,c:"#ffffff",cross:Math.random()<.3})},
+  sky:{r:.22,f:()=>({x:-3,y:6+Math.random()*(FLOOR-14),vx:.05+Math.random()*.05,vy:(Math.random()-.5)*.006,life:3200,max:3200,c:Math.random()<.65?"#ffffff":"#ffe9a8",cross:Math.random()<.08})},
+  page:{r:.3,f:()=>({x:Math.random()*W,y:FLOOR-Math.random()*4,vx:(Math.random()-.5)*.01,vy:-.02-Math.random()*.025,life:2200,max:2200,c:Math.random()<.7?"#120a1e":"#7a4fd6",cross:Math.random()<.15})}
 };
 const ENTRY_MS=calm?900:2000;
 /* Mage sprites, 24x32, drawn facing right. Rows 0-9: a hat (cols 0-17, one per rival, see HATS and HAT_OF) joined to the staff head (cols 18-23).
@@ -1349,12 +1442,14 @@ const HATS={
   wide:["..................","..................","..................","..................","..................",".........hhhh.....","........hhhhhh....","........tttttt....","..hhhhhhhhhhhhhhhh","...HHHHHHHHHHHHHH."],
   antler:["....w.........w...","....w..w...w..w...",".....w.w...w.w....",".....www...www....","......ww...ww.....",".......w...w......",".......whhhw......",".......hhhhhh.....","......hhthhthh....","......hhhhhhhhh..."],
   cowl:["..........t.......","..........t.......",".........hhh......",".........hhh......","........hhhhh.....","........hhHhh.....",".......hhhHhhh....",".......hhhHhhh....","......hhhhHhhhh...","......hhtttttthh.."],
-  crown:["..................","..................","..................",".......t..t..t....",".......t..t..t....",".......ttttttt....",".......hhhhhhh....","..................","........hhhhhh....",".......hhhhhhhh..."]
+  crown:["..................","..................","..................",".......t..t..t....",".......t..t..t....",".......ttttttt....",".......hhhhhhh....","..................","........hhhhhh....",".......hhhhhhhh..."],
+  /* a floating halo over a gold circlet with swept-back feather wings */
+  halo:["..........tttt....",".........t....t...","..........tttt....","..................","....rr........rr..","...rrRr.hhh.rRrr..","....rRRhhhhhRRr...",".....RrhhHhhrR....",".......tttttttt...","......hhhhhhhhh..."]
 };
-const HAT_OF={varn:"hood",brakk:"horns",moth:"wide",hemlock:"antler",kesh:"cowl",unwritten:"crown"};
+const HAT_OF={varn:"hood",brakk:"horns",moth:"wide",hemlock:"antler",kesh:"cowl",vane:"halo",unwritten:"crown"};
 const SPR={};
 function sprite(hat,casting){const k=(HATS[hat]?hat:"point")+(casting?1:0);return SPR[k]||(SPR[k]=HATS[HATS[hat]?hat:"point"].map((r,i)=>r+STAFF[casting?1:0][i]).concat(casting?BODY_CAST:BODY));}
-/* Drop-in art. Publish a PNG sheet as art/<id>.png (id: you, varn, brakk, moth, hemlock, kesh, unwritten) and it replaces the drawn sprite.
+/* Drop-in art. Publish a PNG sheet as art/<id>.png (id: you, varn, brakk, moth, hemlock, kesh, vane, unwritten) and it replaces the drawn sprite.
    Sheet layout: frames 32 wide x 40 tall, facing right, feet on the bottom row of the frame, transparent background.
    Rows: 0 idle (4 frames), 1 channel (4), 2 release (3), 3 hit (2), 4 fall (5). A missing sheet falls back to the drawn sprite. */
 const ART={},ART_FW=32,ART_FH=40,ART_ROW={idle:[0,4],channel:[1,4],release:[2,3],hit:[3,2],fall:[4,5]};
@@ -1362,7 +1457,7 @@ function loadArt(id){if(id in ART) return;ART[id]=null;try{const im=new Image();
 const YOU_PAL={h:"#2f7f73",H:"#1d554d",r:"#62bda7",R:"#3f8f7e",t:"#ebe6d8",s:"#e6c3a0"};
 const POS={you:{x:18,y:FLOOR-SH,flip:false},foe:{x:102,y:FLOOR-SH,flip:true}};
 function mid(who){const p=POS[who];return p.x+(p.flip?13:10);}
-const A={vt:0,slow:1,fin:null,theme:"",parts:[],fx:[],pose:{you:{},foe:{}},shake:0,mag:1,flash:0,dark:0,decals:[],fade:{you:0,foe:0},lift:{you:0,foe:0},stars:[],n:0,scale:1,entry:null,bolts:[]};
+const A={vt:0,tearUntil:0,slow:1,fin:null,theme:"",parts:[],fx:[],pose:{you:{},foe:{}},shake:0,mag:1,flash:0,dark:0,decals:[],fade:{you:0,foe:0},lift:{you:0,foe:0},stars:[],n:0,scale:1,entry:null,bolts:[],rt:0,freeze:null,kill:null,frozen:false};
 for(let i=0;i<34;i++) A.stars.push({x:(i*53+17)%W,y:(i*29+7)%54,ph:i*1.7});
 function gem(who,casting){const p=POS[who];return {x:p.x+(p.flip?3:20),y:p.y+(casting?2:7)-Math.round(A.lift[who])};}
 function chest(who){return {x:mid(who),y:POS[who].y+20-Math.round(A.lift[who])};}
@@ -1378,8 +1473,17 @@ function paintBg(name){
     const f=y/FLOOR*n,i=Math.min(n-1,Math.floor(f)),edge=f-i>.8&&i<n-1;
     for(let x=0;x<W;x++){b.fillStyle=edge&&(x+y)%2?t.sky[i+1]:t.sky[i];b.fillRect(x,y,1,1);}
   }
+  if(name==="page"){b.fillStyle="rgba(58,36,88,.2)";for(let y=8;y<FLOOR-12;y+=7) b.fillRect(0,y,W,1);b.fillStyle="rgba(199,55,47,.4)";b.fillRect(16,0,1,FLOOR);}
+  if(name==="sky"){
+    for(let k=0;k<16;k++){const an=k/16*6.283;b.fillStyle=k%2?"rgba(255,233,168,.35)":"rgba(255,241,168,.6)";for(let r=12;r<17+(k%2?0:4);r++) b.fillRect(Math.round(112+Math.cos(an)*r),Math.round(22+Math.sin(an)*r),1,1);}
+    b.fillStyle=t.moon;for(let y=-9;y<=9;y++)for(let x=-9;x<=9;x++) if(x*x+y*y<=81) b.fillRect(112+x,22+y,1,1);
+    b.fillStyle="#ffffff";for(let y=-5;y<=-1;y++)for(let x=-5;x<=-1;x++) if(x*x+y*y<=14) b.fillRect(112+x,22+y,1,1);
+    for(let x=0;x<W;x++){const h=12+4*Math.sin(x*.13)+3*Math.sin(x*.31+2)+2*Math.abs(Math.sin(x*.05));b.fillStyle=t.far;b.fillRect(x,Math.round(FLOOR-h),1,Math.ceil(h));b.fillStyle="#ffffff";b.fillRect(x,Math.round(FLOOR-h),1,1);b.fillStyle="#aab4c8";b.fillRect(x,Math.round(FLOOR-h*.45),1,Math.ceil(h*.45));}
+    b.fillStyle="rgba(255,255,255,.55)";for(const [cx,cy,w] of [[22,16,22],[54,30,16],[86,12,12]]){b.fillRect(cx,cy,w,2);b.fillRect(cx+3,cy-1,w-8,1);}
+  }else{
   b.fillStyle=t.moon;for(let y=-9;y<=9;y++)for(let x=-9;x<=9;x++) if(x*x+y*y<=81&&(x-4)*(x-4)+(y+3)*(y+3)>52) b.fillRect(112+x,20+y,1,1);
   b.fillStyle=t.far;for(let x=0;x<W;x++){const h=16+8*Math.sin(x*.09)+5*Math.sin(x*.23+1);b.fillRect(x,Math.round(FLOOR-h),1,Math.ceil(h));}
+  }
   for(const x0 of [5,133]){
     b.fillStyle=t.pil;b.fillRect(x0,24,6,FLOOR-24);b.fillRect(x0-1,22,8,3);b.fillRect(x0-1,FLOOR-3,8,3);
     b.fillStyle=t.hi;b.fillRect(x0,25,1,FLOOR-28);b.fillRect(x0-1,22,8,1);
@@ -1437,17 +1541,19 @@ function launch(e){
   if(e.combo){
     const names=e.tags.map(t=>TAGS[t]?L(TAGS[t].name):t).join(" + "),rx=e.react;
     if(rx&&TAGS[rx.lead]&&TAGS[rx.other]){
-      titleCard(L(rx.name),"combo",tx("combo",e.combo>=2)+" · "+names);
+      titleCard(L(rx.name),"combo",tx("combo",e.combo>=2)+" · "+names+(e.stolen?" · "+tx("stolenSub",e.who==="you"):""));
       const span=estFor(e)+600;
       A.fx.push({type:"react",fx:rx.fx,t0:now,dur:span,hit:estFor(e)/span,a:gem(e.who,true),b:chest(o),dir:e.who==="you"?1:-1,c:TAGS[rx.lead].c,d:TAGS[rx.other].c,seed:Math.random()*1000});
       SFX.react(rx.fx);
-    }else titleCard(tx("combo",e.combo>=2),"combo",names);
+    }else titleCard(tx("combo",e.combo>=2),"combo",names+(e.stolen?" · "+tx("stolenSub",e.who==="you"):""));
+    if(e.stolen&&e.who==="foe"&&!A.fin) setTimeout(()=>say(L((SAY[rival().id]||[])[3])),CHARGE);
     SFX.combo(e.combo);A.flash=now+(e.combo>=2?240:120);
     for(const t of e.tags) if(TAGS[t]) for(let x=8;x<W;x+=12) spark(x,FLOOR+2,TAGS[t].c,2,.06,500);
   }else if(e.insp&&e.name) titleCard(e.name,null,tx("bInsp",e.insp)+(e.lethal?" · "+tx("lethalT"):""),c[1]);
   else if(tr>=2&&e.name) titleCard(e.who==="you"?e.name:L(e.name),null,null,c[1]);
   A.fx.push({type:"charge",t0:now,dur:CHARGE,who:e.who,c,s:big?3:1+Math.min(2,tier(e.power))});
   A.fx.push({type:"motion",m,t0:now+CHARGE,dur,a:gem(e.who,true),b:self?chest(e.who):chest(o),c,s:big?4:1+tier(e.power),n:e.count||0,seed:Math.random()*1000,who:e.who,dir:e.who==="you"?1:-1});
+  if(e.lethal) A.fx.push({type:"cata",t0:now+CHARGE,dur:dur+500,a:gem(e.who,true),b:chest(o),c,el:e.el});
   if(big) A.dim={from:now,until:now+CHARGE+dur+300};
   setTimeout(()=>{
     if(e.form==="ward") SFX.ward();else if(e.form==="heal") SFX.mend();else if(e.form==="break") SFX.brk();else if(e.form==="field") SFX.field();
@@ -1456,10 +1562,11 @@ function launch(e){
 }
 function impact(e,c){
   const now=A.vt,p=e.who?chest(e.who):{x:72,y:FLOOR-20};
-  if(A.fin&&e.t==="hit"&&e.n>=12) A.fin.inv=A.vt+150/(A.slow||1);
+  if(A.fin&&e.t==="hit"&&e.n>=12&&!e.fatal) A.fin.inv=A.vt+150/(A.slow||1);
+  if(e.t==="hit"&&e.fatal){A.freeze={until:A.rt+FREEZE,inv:A.rt+(calm?0:130)};SFX.kill();}
   if(e.t==="hit"){
     if(e.n>0){
-      A.pose[e.who]={hit:now+300,push:Math.min(5,1+Math.floor(e.n/8))};
+      A.pose[e.who]={hit:now+(e.n>=20?520:300),push:Math.min(e.n>=20?8:5,1+Math.floor(e.n/8))};
       spark(p.x,p.y,c,8+Math.min(40,e.n*1.4),.07+Math.min(.12,e.n/300),520+e.n*6);
       A.fx.push({type:"shock",t0:now,dur:520+e.n*6,x:p.x,c,r:10+Math.min(40,e.n)});
       if(e.n>=8) A.decals.push({x:p.x-7+Math.random()*14,o:Math.floor(Math.random()*12),c:c[2]});
@@ -1480,14 +1587,50 @@ function impact(e,c){
   else if(e.t==="surge"){const q=gem(e.who,true);spark(q.x,q.y,["#ffffff","#ffd27a","#c08cff","#7ff0d0"],60,.16,900);A.flash=now+200;titleCard(tx("surgeT"),"combo",tx("surgeK",e.kind));SFX.combo(2);}
   else if(e.t==="wardbreak"){spark(p.x,p.y,["#ffffff","#cfe9ff"],26,.12,560);floatText(e.who,tx("wardDown"),"info");SFX.wardDown();}
 }
+const FREEZE=calm?250:750;
+/* The batch that ends the duel: slow motion, a letterbox and a caption; impact() then holds the frame. */
+function killCam(c){
+  if(!calm) A.slow=2.2;
+  A.kill={r0:A.rt};cv.parentNode.classList.add("kill");
+  for(const o of document.querySelectorAll(".killcap")) o.remove();
+  const d=document.createElement("div");d.className="killcap px";
+  d.textContent=tx("finishingBlow")+(c&&c.name?" · "+(c.who==="you"?c.name:L(c.name)):"");
+  $("floats").appendChild(d);
+}
+function killOff(){A.kill=null;A.freeze=null;cv.parentNode.classList.remove("kill");for(const o of document.querySelectorAll(".killcap")) o.remove();}
 function play(ev){
-  if(ev[0]&&ev[0].t==="tick"){for(const e of ev.slice(1)) impact(e,e.dot?STATUS[e.dot].c:EL.void.c);return 900*(A.slow||1);}
+  const fatal=ev.some(e=>e.t==="hit"&&e.fatal);
+  if(fatal&&!A.fin) killCam(ev.find(e=>e.t==="cast"));
+  if(ev[0]&&ev[0].t==="phase") return phaseFx(ev)*(A.slow||1);
+  if(ev[0]&&ev[0].t==="tick"){for(const e of ev.slice(1)) impact(e,e.dot?STATUS[e.dot].c:EL.void.c);return 900*(A.slow||1)+(fatal?FREEZE:0);}
   let arrive=0,pal=EL.void.c,hold=0;
   for(const e of ev){
     if(e.t==="cast"){launch(e);arrive=estFor(e);pal=palOf(e);hold=Math.max(hold,holdFor(e));}
     else{const at=arrive,pp=pal;setTimeout(()=>impact(e,pp),at*(A.slow||1));}
   }
-  return (calm?Math.min(hold,1400):hold)*(A.slow||1);
+  return (calm?Math.min(hold,1400):hold)*(A.slow||1)+(fatal?FREEZE:0);
+}
+/* The Unwritten tears the page: a rift opens down the arena, the hall swaps to "page" behind it (A.tearUntil), ink pours out. */
+function phaseFx(ev){
+  const now=A.vt,dur=calm?1200:2600,sl=A.slow||1;
+  A.tearUntil=now+dur*.45;A.fx.push({type:"tear",t0:now,dur,seed:Math.random()*1000});
+  A.flash=now+260;SFX.tear();titleCard(tx("phaseT"),"combo",tx("phaseSub"));
+  if(!A.fin) setTimeout(()=>say(L((SAY.unwritten||[])[4])),dur*.62*sl);
+  for(const e of ev.slice(1)) setTimeout(()=>impact(e,EL.void.c),dur*.75*sl);
+  return dur+900;
+}
+function drawTear(f,p,now){
+  const cx=72,rnd=k=>{const v=Math.sin(f.seed+k*12.9898)*43758.5453;return v-Math.floor(v);};
+  const reach=clamp(p/.28,0,1)*H,open=p<.28?1:1+Math.sin(clamp((p-.28)/.72,0,1)*Math.PI)*W*.55,a=p<.8?1:(1-p)/.2;
+  g.globalAlpha=a;
+  for(let y=0;y<reach;y+=2){
+    const j=Math.round((rnd(Math.floor(y/4))-.5)*7),w=Math.max(1,Math.round(open*(.75+.25*rnd(y+50)))),x0=cx+j-Math.round(w/2);
+    px(x0,y,w,2,"#f6f2e6");px(x0-1,y,1,2,"#120a1e");px(x0+w,y,1,2,"#120a1e");
+    if(w>6&&rnd(y+7)<.3) px(x0+2+Math.floor(rnd(y+9)*(w-4)),y,2,1,"#3a2458");
+  }
+  g.globalAlpha=1;
+  glow(cx,reach/2,8+Math.round(open/4),"#c9a2ff",.12*a);
+  if(!calm&&!A.frozen&&Math.random()<.7) A.parts.push({x:cx+(Math.random()-.5)*(open+6),y:Math.random()*reach,vx:(Math.random()-.5)*.09,vy:-.015-Math.random()*.03,life:1000,max:1000,c:Math.random()<.6?"#120a1e":"#7a4fd6",cross:Math.random()<.2});
 }
 function orbAt(x,y,r,c){
   glow(x,y,r+3,c[1],.12);
@@ -1628,11 +1771,11 @@ function drawMage(who,now){
   const p=POS[who],m=S[who],c=m.cast,pose=A.pose[who]||{},R=who==="foe"?rival():null,artId=R?R.id:"you";
   loadArt(artId);
   const dead=m.hp<=0&&S.phase!=="home";
-  A.fade[who]=dead?Math.min(1.05,A.fade[who]+.012):0;
+  A.fade[who]=dead?Math.min(1.05,A.fade[who]+(A.frozen?0:.012)):0;
   const elapsed=c?(S.t-c.start)/BEAT:0;
   A.lift[who]+=((c&&!dead?Math.min(6,1.5+elapsed*1.2):0)-A.lift[who])*.06;
   if(A.fade[who]>=1.05) return;
-  const base=who==="you"?YOU_PAL:R.pal;
+  const base=who==="you"?YOU_PAL:p2(R)&&!(A.tearUntil>now)?R.phase2.pal:R.pal;
   const ent=who==="foe"&&A.entry?(now-A.entry.t0)/ENTRY_MS:1;
   if(ent<1){
     /* arrival: a pillar of the rival's light, then the figure resolves out of it */
@@ -1648,10 +1791,14 @@ function drawMage(who,now){
   const pal=Object.assign({e:"#1a1a1a",w:"#8a6a44",b:"#2a2320",g:el?cs[1]:"#cfd8d4",c:base.H},base);
   if(c&&elapsed>=2) pal.e=cs[0];
   const lunge=pose.lunge>now?(p.flip?-3:3):0,hit=pose.hit>now;
-  const push=hit?Math.round((pose.push||1)*(pose.hit-now)/260)*(p.flip?1:-1):0;
-  const bob=Math.floor(now/520+(p.flip?.5:0))%2?0:1;
+  const push=hit?Math.round((pose.push||1)*Math.min(1,(pose.hit-now)/260))*(p.flip?1:-1):0;
+  /* body language: kneel and pant at low life, raise the staff over a fallen rival */
+  const low=!dead&&!c&&S.phase==="duel"&&m.hp<=m.maxHp*.25,won=!dead&&S.phase!=="duel"&&S.phase!=="home"&&S.phase!=="rest"&&S[other(who)].hp<=0;
+  const bob=low?(Math.floor(now/280)%2?0:1):Math.floor(now/520+(p.flip?.5:0))%2?0:1;
   const lift=Math.round(A.lift[who]+(c?Math.sin(now/320)*.9:0));
-  const x=p.x+lunge+push,y=p.y+(c?0:bob)-lift;
+  const x=p.x+lunge+push,y=p.y+(c?0:bob)-lift+(low?3:0)-(won?2:0);
+  if(low&&!calm&&Math.random()<.04){A.parts.push({x:mid(who)+(p.flip?-6:6),y:y+6,vx:(p.flip?-1:1)*.012,vy:-.008,life:700,max:700,c:"#cfd8d4"});}
+  if(won&&!calm&&Math.random()<.35){const q=gem(who,true);A.parts.push({x:q.x+(Math.random()-.5)*6,y:q.y-2,vx:(Math.random()-.5)*.02,vy:-.03-Math.random()*.02,life:900,max:900,c:Math.random()<.5?"#ffd27a":"#ffffff",cross:Math.random()<.3});glow(q.x,q.y,6,"#ffd27a",.08);}
   px(mid(who)-7+Math.min(3,lift>>1),FLOOR+1,14-Math.min(6,lift),1,"rgba(0,0,0,.5)");
   if(c&&!dead){
     const rx=9+Math.min(20,elapsed*3.6),ry=Math.max(2,rx*.2),cx=mid(who),cy=FLOOR+7,n=Math.round(rx*2.4);
@@ -1674,8 +1821,10 @@ function drawMage(who,now){
   }
   if(dead&&Math.random()<.5){const q=chest(who);A.parts.push({x:q.x-5+Math.random()*10,y:q.y+Math.random()*8,vx:0,vy:-.03,life:600,max:600,c:"#ebe6d8"});}
   const im=ART[artId];
-  if(im){const st=dead?"fall":hit?"hit":pose.lunge>now?"release":c?"channel":"idle";drawArt(im,st,now,who,x,y,p.flip,hit&&pose.hit-now>160,A.fade[who]);}
-  else drawSprite(sprite(R?HAT_OF[R.id]:"point",!!(c||pose.lunge>now)),pal,x,y,p.flip,hit&&pose.hit-now>160?"#ffffff":null,A.fade[who],now);
+  if(low){g.save();g.beginPath();g.rect(0,0,W,FLOOR+1);g.clip();}
+  if(im){const st=dead?"fall":hit?"hit":pose.lunge>now||won?"release":c?"channel":"idle";drawArt(im,st,now,who,x,y,p.flip,hit&&pose.hit-now>160,A.fade[who]);}
+  else drawSprite(sprite(R?HAT_OF[R.id]:"point",!!(c||pose.lunge>now||won)),pal,x,y,p.flip,hit&&pose.hit-now>160?"#ffffff":null,A.fade[who],now);
+  if(low) g.restore();
   if(c&&!dead){
     const q=gem(who,true),rad=2+Math.min(7,elapsed),n=4+Math.min(12,elapsed*3);
     glow(q.x,q.y,4+Math.min(10,elapsed*2),cs[1],.09);
@@ -1683,6 +1832,7 @@ function drawMage(who,now){
     px(q.x,q.y,1,1,"#ffffff");
     if(elapsed>=3&&Math.random()<.08){const pts=[0,Math.random()*6-3,Math.random()*6-3,0];A.fx.push({type:"zig",t0:now,dur:90,a:q,b:{x:q.x+(p.flip?-1:1)*(4+Math.random()*8),y:FLOOR},c:cs,pts});}
   }
+  if(R&&R.id==="vane"&&!dead&&!im){const hx=mid(who)+(p.flip?-1:0),hy=y-1,an=now/240;px(hx+Math.round(Math.cos(an)*3),hy+Math.round(Math.sin(an)*.8),1,1,"#ffffff");if(!calm&&Math.random()<.05) A.parts.push({x:hx+(Math.random()-.5)*5,y:hy,vx:0,vy:-.012,life:600,max:600,c:"#ffe9a8"});}
   if(R&&R.boss&&!dead){for(let i=0;i<5;i++){const an=now/700+i*1.2566;px(mid(who)+Math.cos(an)*9,y+1+Math.sin(an)*2,1,1,i%2?"#c9a2ff":"#ffffff");}}
 }
 function lineTo(a,b,pts,c1,c2){
@@ -1694,6 +1844,22 @@ function lineTo(a,b,pts,c1,c2){
   }
 }
 /* How each battlefield condition looks. a = fade in/out, c = the tag's three colours. */
+/* The Moonlit Altar: a carved stone pillar on two steps, a cold blue flame in a bowl, two candles and a shaft of moonlight. */
+function drawShrine(now){
+  const cx=112,k=A.restT0===undefined?1:clamp((now-A.restT0)/900,0,1),fl=Math.sin(now/170)+Math.sin(now/97)*.5,pul=.5+.5*Math.sin(now/700);
+  g.save();g.globalAlpha=k;
+  g.fillStyle="rgba(200,220,255,"+(.05+.03*pul).toFixed(3)+")";g.fillRect(cx-7,0,14,FLOOR-26);g.fillRect(cx-4,0,8,FLOOR-26);
+  px(cx-15,FLOOR-3,30,3,"#3a4660");px(cx-15,FLOOR-3,30,1,"#56647f");px(cx-12,FLOOR-6,24,3,"#3a4660");px(cx-12,FLOOR-6,24,1,"#6d7a96");
+  px(cx-5,FLOOR-23,10,17,"#3a4660");px(cx-5,FLOOR-23,1,17,"#6d7a96");px(cx+4,FLOOR-23,1,17,"#1d2a4d");
+  for(let i=0;i<3;i++){const on=.35+.65*Math.max(0,Math.sin(now/500-i*1.3));px(cx-1,FLOOR-20+i*5,2,1,"rgba(168,230,255,"+on.toFixed(2)+")");px(cx-2+(i%2)*3,FLOOR-19+i*5,1,1,"rgba(168,230,255,"+(on*.7).toFixed(2)+")");}
+  px(cx-8,FLOOR-26,16,3,"#56647f");px(cx-8,FLOOR-26,16,1,"#8f9bb5");px(cx-5,FLOOR-28,10,2,"#2a3a5c");
+  const h=7+Math.round(fl);
+  for(let y=0;y<h;y++){const w=Math.max(1,Math.round((1-y/h)*5+(y%2?0:.5)));px(cx-w/2+Math.round(Math.sin(now/120+y)*.6),FLOOR-29-y,w,1,y<h*.35?"#ffffff":y<h*.7?"#a8e6ff":"#3a78b8");}
+  glow(cx,FLOOR-32,22,"#a8e6ff",.06+.03*pul);
+  for(const x of [cx-11,cx+9]){px(x,FLOOR-9,2,3,"#e9e4d6");px(x,FLOOR-9,1,3,"#ffffff");px(x+(Math.floor(now/140+x)%2?1:0),FLOOR-11,1,2,"#ffd27a");glow(x+1,FLOOR-10,4,"#ffb36b",.07);}
+  g.restore();
+  if(!calm&&k>=1&&Math.random()<.2) A.parts.push({x:cx-2+Math.random()*4,y:FLOOR-34-Math.random()*3,vx:(Math.random()-.5)*.012,vy:-.012-Math.random()*.014,life:1800,max:1800,c:Math.random()<.6?"#a8e6ff":"#ffffff"});
+}
 function drawField(now){
   for(const f of S.field){
     const a=clamp((f.until-S.t)/1400,0,1)*clamp((S.t-f.born)/350,0,1);if(a<=0.02) continue;
@@ -1839,6 +2005,7 @@ function drawFx(f,now){
   else if(f.type==="charge") drawCharge(f,p,now);
   else if(f.type==="cata") drawCata(f,p,now);
   else if(f.type==="react") drawReaction(f,p,now);
+  else if(f.type==="tear") drawTear(f,p,now);
   else if(f.type==="bolt"||f.type==="wave"){
     const x=L(f.a.x,f.b.x),y=L(f.a.y,f.b.y)-Math.sin(p*3.1416)*6,s=f.sz;
     glow(x,y,3+s*2,c[1],.1);
@@ -1884,7 +2051,10 @@ function drawStatus(now,dt){
 }
 function frame(now){
   const dt=Math.min(60,now-last);last=now;A.n++;
-  const rnow=now;A.vt+=dt/(A.slow||1);
+  const rnow=now;A.rt+=dt;
+  /* a held frame: the virtual clock stops while A.freeze lasts */
+  const frozen=A.frozen=!!(A.freeze&&A.rt<A.freeze.until);
+  if(!frozen) A.vt+=dt/(A.slow||1);
   /* simulation: the clock only runs while a round resolves */
   A.scale=1;
   /* The clock runs at 60% speed and stops while a landed spell plays out; the round ends only when the last animation has finished. */
@@ -1900,14 +2070,14 @@ function frame(now){
   if(T.ending&&now>=T.holdUntil){T.ending=false;T.resolving=false;duelOver();}
   now=A.vt;
   const vis=1;
-  const theme=S.phase==="home"?"court":rival().theme;
-  if(theme!==A.theme){A.theme=theme;paintBg(theme);}
+  const theme=S.phase==="home"||S.phase==="rest"?"court":A.tearUntil>A.vt?rival().theme:rivalTheme(rival());
+  if(theme!==A.theme){A.theme=theme;paintBg(theme);cv.parentNode.classList.toggle("page",theme==="page");}
   if(A.n%8===0) humUpdate();
   musicTick();
   const sx=0,sy=0;
   g.fillStyle="#000";g.fillRect(0,0,W,H);
   g.drawImage(bg,sx,sy);
-  for(const s of A.stars){const v=Math.sin(now/600+s.ph);if(v>.2) px(s.x,s.y,1,1,v>.8?"#ffffff":"#8f9bb5");}
+  if(A.theme!=="page"&&A.theme!=="sky") for(const s of A.stars){const v=Math.sin(now/600+s.ph);if(v>.2) px(s.x,s.y,1,1,v>.8?"#ffffff":"#8f9bb5");}
   for(const x0 of [7,135]){px(x0,19,2,3,"#ff8a3d");px(x0+(Math.floor(now/130)%2),17,1,2,"#ffd27a");glow(x0+1,19,5,"#ff8a3d",.06);}
   let deep=0;
   if(S.phase==="duel") for(const w of ["you","foe"]){const c=S[w].cast;if(c) deep=Math.max(deep,Math.min(.5,.08+(S.t-c.start)/BEAT*.08));}
@@ -1923,26 +2093,30 @@ function frame(now){
       setTimeout(()=>spark(tg.x,tg.y,EL[el].c,16,.09,460),CHARGE+MOT[m][1]);
       if(Math.random()<.4){const ks=Object.keys(REACTIONS),key=ks[Math.floor(Math.random()*ks.length)],r=REACTIONS[key],span=CHARGE+MOT[m][1]+600;
         A.fx.push({type:"react",fx:r.fx,t0:now,dur:span,hit:(CHARGE+MOT[m][1])/span,a:gem("you",true),b:tg,dir:1,c:TAGS[r.lead].c,d:TAGS[key.split("+").find(x=>x!==r.lead)||r.lead].c,seed:Math.random()*1000});}}
-  }else{drawMage("you",now);drawMage("foe",now);if(S.st) drawStatus(now,dt);}
-  if(S.phase!=="home"&&!calm){const wx=WEATHER[A.theme];if(wx){const k=A.entry?clamp((now-A.entry.t0)/ENTRY_MS,0,1):1;if(Math.random()<wx.r*k*dt/16) A.parts.push(wx.f());}}
+  }else if(S.phase==="rest"){drawShrine(now);drawMage("you",now);}
+  else{drawMage("you",now);drawMage("foe",now);if(S.st) drawStatus(now,dt);}
+  if(S.phase!=="home"&&S.phase!=="rest"&&!calm){const wx=WEATHER[A.theme];if(wx){const k=A.entry?clamp((now-A.entry.t0)/ENTRY_MS,0,1):1;if(Math.random()<wx.r*k*dt/16) A.parts.push(wx.f());}}
   if(A.dim&&now<A.dim.until){const k=Math.min(1,(now-A.dim.from)/300)*Math.min(1,(A.dim.until-now)/300);g.fillStyle="rgba(4,4,12,"+(.45*k).toFixed(3)+")";g.fillRect(0,0,W,H);}
   A.fx=A.fx.filter(f=>drawFx(f,now));
-  const pdt=dt*vis/(A.slow||1);
+  const pdt=frozen?0:dt*vis/(A.slow||1);
   for(const q of A.parts){q.x+=q.vx*pdt;q.y+=q.vy*pdt;q.life-=pdt;if(q.life<=0) continue;
     if(q.cross){px(q.x-1,q.y,3,1,q.c);px(q.x,q.y-1,1,3,q.c);}else if(q.life>q.max*.3||Math.floor(now/50)%2) px(q.x,q.y,1,1,q.c);}
   A.parts=A.parts.filter(q=>q.life>0);if(A.parts.length>460) A.parts.splice(0,A.parts.length-460);
-  if(A.flash>now){g.fillStyle="rgba(255,255,255,"+Math.min(.6,(A.flash-now)/260).toFixed(3)+")";g.fillRect(0,0,W,H);}
+  if(A.flash>now&&!frozen){g.fillStyle="rgba(255,255,255,"+Math.min(.6,(A.flash-now)/260).toFixed(3)+")";g.fillRect(0,0,W,H);}
+  if(frozen&&A.rt<A.freeze.inv){g.globalCompositeOperation="difference";g.fillStyle="#ffffff";g.fillRect(0,0,W,H);g.globalCompositeOperation="source-over";}
+  if(A.kill&&!A.fin){const bh=Math.round(11*clamp((A.rt-A.kill.r0)/500,0,1));if(bh>0){px(0,0,W,bh,"#000");px(0,H-bh,W,bh,"#000");}}
   if(A.fin) composeRec();
   if(rnow-T.lastLive>90){T.lastLive=rnow;renderLive();}
   requestAnimationFrame(frame);
 }
 const SAY={
-  varn:["The tide is patient. Are you?","You cast like someone in a hurry.","The water recedes."],
-  brakk:["Hit first. Think later.","Too slow, scribbler!","Hah. Good fire."],
-  moth:["Leave me something to play with.","Was that the spell you meant?","The lantern goes dark."],
-  hemlock:["Sit. Grow roots. Lose slowly.","Saplings break in the wind.","Even old trees fall."],
-  kesh:["I have seen how you burn.","Ash remembers everything.","This was not in the embers."],
-  unwritten:["You wrote your way here. Now be erased.","Every word of yours, unwritten.","Then write the ending yourself."]
+  varn:["The tide is patient. Are you?","You cast like someone in a hurry.","The water recedes.","Thank you for the water."],
+  brakk:["Hit first. Think later.","Too slow, scribbler!","Hah. Good fire.","Your fire burns for me now!"],
+  moth:["Leave me something to play with.","Was that the spell you meant?","The lantern goes dark.","You left this for me. How kind."],
+  hemlock:["Sit. Grow roots. Lose slowly.","Saplings break in the wind.","Even old trees fall.","Whatever you plant, I harvest."],
+  vane:["The wind has already chosen a side.","You blink. I am elsewhere.","Even the sun sets.","Your light, my lance."],
+  kesh:["I have seen how you burn.","Ash remembers everything.","This was not in the embers.","I saw you build this. I saw it fall on you."],
+  unwritten:["You wrote your way here. Now be erased.","Every word of yours, unwritten.","Then write the ending yourself.","Your words. My spell.","Enough. I will write you out myself."]
 };
 function arrive(){
   const R=rival(),line=L((SAY[R.id]||[])[0]),tok=A.entry={t0:A.vt};
@@ -1973,7 +2147,7 @@ function drawRows(rows,pal,x,y,k,flip){
 }
 function startFinale(){
   const steps=T.rep.slice(-3);if(!steps.length||A.fin) return;
-  const live=S;
+  const live=S;killOff();
   S=Object.assign(JSON.parse(JSON.stringify(Object.assign({},live,{ev:[]}))),{phase:"duel",ev:[]});
   applySnap(steps[0].pre);
   A.fx=[];A.parts=[];A.dim=null;A.flash=0;A.fade={you:0,foe:0};
@@ -2020,7 +2194,7 @@ function drawCutIn(cut){
   rg.fillStyle=c[2];rg.fill();rg.clip();
   for(let i=0;i<46;i++){const y=by-sk+((i*53)%(bh+2*sk)),len=80+(i*97)%320,sp=1.6+(i%5)*.4,x=((A.vt*sp+i*211)%(RW+500))-250;rg.fillStyle=i%3?c[1]:c[0];rg.globalAlpha=(1-leave)*(.35+(i%4)*.15);rg.fillRect(mine?x:RW-x-len,y,len,i%4?2:4);}
   rg.globalAlpha=1-leave;
-  const k=9,sw=SW*k,sh=SH*k,base=mine?YOU_PAL:R.pal,pal=Object.assign({e:c[0],w:"#8a6a44",b:"#2a2320",g:c[0],c:base.H},base);
+  const k=9,sw=SW*k,sh=SH*k,base=mine?YOU_PAL:p2(R)?R.phase2.pal:R.pal,pal=Object.assign({e:c[0],w:"#8a6a44",b:"#2a2320",g:c[0],c:base.H},base);
   const sx=mine?-sw+enter*(sw*.9+30)+p*30:RW-enter*(sw*.9+30)-p*30,sy=by+bh-sh*.82;
   rg.fillStyle="rgba(0,0,0,.35)";rg.fillRect(0,by+bh*.5,RW,2);
   drawRows(sprite(mine?"point":HAT_OF[R.id],true),pal,sx,sy,k,!mine);
@@ -2100,12 +2274,23 @@ async function saveVideo(){
 
 /* ---------- flow ---------- */
 function duelOver(){
+  A.slow=1;
   if(S.phase==="dead") SFX.lose();else{SFX.win();say(L((SAY[rival().id]||[])[2]));}
   T.composing=false;$("spell").blur();A.lastFloor=S.floor;
   saveMeta();renderStatic();
-  setTimeout(()=>{if(!A.fin&&S.phase!=="duel"&&S.phase!=="home") startFinale();},1600);
+  setTimeout(()=>{if(!A.fin&&S.phase!=="duel"&&S.phase!=="home"&&S.phase!=="rest") startFinale();},1600);
 }
-function beginDuelView(){T.paused=false;T.note=null;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";localSave();window.scrollTo(0,0);renderStatic();arrive();}
+/* The shrine halfway up: the hall dims to the sanctum's moonlight, the rival's place holds an altar (drawShrine). */
+function restView(){
+  killOff();A.slow=1;T.paused=false;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";A.decals=[];A.restT0=A.vt;
+  for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
+  const d=document.createElement("div");d.className="arrive";
+  d.innerHTML=`<small class="px">${esc(tx("floorOf",S.floor,FLOORS))}</small><b>${esc(tx("shrineName"))}</b><i>${esc(tx("shrineSub"))}</i>`;
+  $("floats").appendChild(d);setTimeout(()=>d.remove(),2000);
+  restChime(1);localSave();window.scrollTo(0,0);renderStatic();
+}
+function restChime(k){[523,659,784,1046].forEach((f,i)=>tone(f*k,f*k,1.1,"sine",.05,i*.17));tone(130,128,1.6,"sine",.06);}
+function beginDuelView(){killOff();A.slow=1;T.paused=false;T.note=null;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";localSave();window.scrollTo(0,0);renderStatic();arrive();}
 function setLang(l){LANG=l==="ru"?"ru":"en";M.lang=LANG;saveMeta();applyLang();renderStatic();}
 function applyLang(){
   document.documentElement.lang=LANG;document.title=tx("title");
@@ -2140,8 +2325,10 @@ document.addEventListener("click",e=>{
   else if(act==="sigil"){if(live){const sg=SIGILS.find(x=>x.id===v);if(sg) fire(normalize(sg,false),false);}}
   else if(act==="focus"){if(live){focus("you");T.note={msg:tx("gathered")};SFX.mend();floatText("you","+"+tx("manaF",has("quill")?25:12),"info");commit();}}
   else if(act==="cont"){if(canAct()&&S.you.cast){T.note=null;commit();}}
-  else if(act==="relic"){if(S.phase==="reward"){takeRelic(v);beginDuelView();}}
-  else if(act==="home"){S=Object.assign(fresh(),{draftText:S.draftText||""});localSave();window.scrollTo(0,0);renderStatic();}
+  else if(act==="relic"){if(S.phase==="reward"){takeRelic(v);if(S.phase==="rest") restView();else beginDuelView();}}
+  else if(act==="rest"){if(S.phase==="rest"){const c={heal:["#eaffb0","#7ad86a"],relic:["#fff1a8","#cda64e"],motes:["#c9fff2","#a8e6ff"]}[v]||["#ffffff"],p=gem("you");
+    takeRest(v);beginDuelView();spark(p.x,p.y,c,26,.06,900,true);restChime(v==="relic"?1.5:v==="motes"?2:1);}}
+  else if(act==="home"){killOff();S=Object.assign(fresh(),{draftText:S.draftText||""});localSave();window.scrollTo(0,0);renderStatic();}
 });
 const box=$("spell");
 box.addEventListener("focus",()=>{T.composing=true;audioInit();});
@@ -2213,6 +2400,14 @@ function finaleRow(){
 }
 function renderEnd(){
   const R=rival();
+  if(S.phase==="rest"){
+    const r=RELICS.find(x=>x.id===S.restRelic),card=(v,h,t,off)=>`<button class="card" data-act="rest" data-v="${v}" ${off?"disabled":""}><div><strong>${esc(h)}</strong><span>${esc(t)}</span></div></button>`;
+    $("pEnd").innerHTML=`<p class="result">${esc(tx("restTitle"))}</p><p class="note">${esc(tx("restNext",S.floor,L(R.name)))}</p><div class="cards">`+
+      card("heal",tx("restHeal"),tx("restHealText",Math.ceil(S.you.hp),S.you.maxHp),false)+
+      card("relic",tx("restRelic"),r?L(r.name)+": "+L(r.text):tx("restNone"),!r)+
+      card("motes",tx("restMotes"),tx("restMotesText",REST_MOTES),false)+`</div>`;
+    return;
+  }
   if(S.phase==="reward"){
     const next=S.floor+1>=FLOORS?BOSS:RIVALS.find(r=>r.id===S.ladder[S.floor]);
     $("pEnd").innerHTML=`<p class="result">${esc(tx("yields",L(R.name)))}</p>${finaleRow()}<p class="note">${esc(tx("rewardNote",8+4*S.floor,S.floor+1,L(next.name)))}</p>
@@ -2240,7 +2435,7 @@ function renderStatic(){
   $("keyLine").hidden=!(WEB&&home&&!needRef);if(WEB&&home&&!needRef) $("keyWho").textContent=tx("keyWho",keyKind());
   if(home){$("pEnd").hidden=true;renderHome();return;}
   $("nm-you").textContent=tx("youRank",tx("ranks")[clamp(M.wins?8:M.best,0,8)]);
-  $("nm-foe").textContent=L(rival().name);
+  $("nm-foe").textContent=S.phase==="rest"?tx("shrineName"):L(rival().name);
   $("pEnd").hidden=duel;$("pCast").hidden=!duel;
   if(!duel) renderEnd();
   $("relicLine").innerHTML=S.relics.length?esc(tx("relics"))+S.relics.map(id=>{const r=RELICS.find(x=>x.id===id);return r?`<b>${esc(L(r.name))}</b> (${esc(L(r.text))})`:"";}).filter(Boolean).join(" · "):"";
