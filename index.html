@@ -173,6 +173,12 @@ details .body b{color:var(--chalk);font-weight:500}
 .chron li{border-left:1px solid var(--line);padding-left:12px}
 .chron h4{color:var(--dust);font-weight:400;margin-bottom:2px}
 .relics{font-size:14.5px;color:var(--dust)}
+.codex{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px}
+.cx{border:1px solid var(--line);border-radius:2px;padding:6px 7px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cx canvas{width:60px;height:30px;image-rendering:pixelated;image-rendering:crisp-edges}
+.cx b{font:400 14px/1.15 var(--display);letter-spacing:.02em;overflow-wrap:anywhere}
+.cx span{font-size:11.5px;color:var(--dust);line-height:1.2}
+.cx.unk{border-style:dashed}.cx.unk b{color:var(--dust)}
 .relics b{color:var(--chalk);font-weight:500}
 </style>
 </head>
@@ -207,12 +213,15 @@ details .body b{color:var(--chalk);font-weight:500}
   <section id="home" class="panel" style="gap:16px">
     <div class="langrow px"><span class="label" data-t="language">Language</span><button data-act="setlang" data-v="en" id="lgEn">English</button><button data-act="setlang" data-v="ru" id="lgRu">Русский</button></div>
     <p class="lede" data-t="lede">You have no spellbook. Write any spell you can imagine and it is cast at once. Floods, fire, storms and roots stay on the battlefield, and the next spell that uses them can end the duel.</p>
-    <div class="row"><button class="btn wide" data-act="run" id="runBtn" data-t="begin">Begin the climb</button></div>
+    <div class="row"><button class="btn wide" data-act="run" id="runBtn" data-t="begin">Begin the climb</button><button class="btn ghost wide" data-act="daily" id="dailyBtn" data-t="dailyBegin">Today's climb</button></div>
+    <p class="note" id="dailyNote"></p>
     <div class="coderow" id="codeHome" hidden><label class="px label" for="codeIn1" data-t="codeLabel">Your free AI key or the family passcode</label><div class="row"><input id="codeIn1" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"><button class="btn ghost" data-act="code" data-v="codeIn1" data-t="codeSave">Save</button></div><details class="keyhelp" open><summary class="px" data-t="keyHow">How to get a free key</summary><div class="body keyHelpBody"></div></details></div>
     <div class="keyline" id="keyLine" hidden><span id="keyWho"></span><button class="btn ghost" data-act="forgetkey" data-t="keyChange">Change</button></div>
     <p class="note" id="homeNote"></p>
     <p class="label px" data-t="sanctum">Sanctum · spend motes on lasting power</p>
     <div class="cards" id="shop"></div>
+    <p class="label px" id="codexLabel"></p>
+    <div class="codex" id="codex"></div>
     <details><summary class="px" data-t="howTo">How a duel works</summary><div class="body" id="helpBody">
       <p><b>Rounds.</b> Each round you and your rival act at the same moment. Your rival has already chosen by the time you write, and neither of you sees the other's choice until the round plays out. Take as long as you like to think.</p>
       <p><b>Write and cast.</b> Describe your spell and press Cast. Claude reads it and judges its power. Power 1 to 3 lands this round, 4 to 6 the next, 7 to 9 the round after, and 10 takes four rounds. While you channel you can't cast anything else, and a hard hit can stagger or break the spell. Within a round, weaker spells land first.</p>
@@ -300,6 +309,12 @@ details .body b{color:var(--chalk);font-weight:500}
      life and the victor raises the staff (drawMage).
    - The Moonlit Altar (phase "rest", REST_AT, takeRest, drawShrine): once per climb, before floor REST_AT, the player picks full
      life, the offered relic (S.restRelic) or REST_MOTES motes. S.rested marks it used.
+   - Endless (S.endless, enterEndless, rivalAt, floorName, drawBeyond): after the tower is won the player may climb on. The Unwritten returns
+     every eighth floor, the altar returns once per eight floors, rivals scale with depth, and M.deep records the deepest floor.
+   - Today's climb (S.daily, startRun(day), rngFor, offer, omenOf, drawOmen): a UTC-dated climb seeded so everyone meets the same ladder,
+     relic offers and omen (a condition on the floor at the start of every duel). M.daily = {d, best}. Ordinary climbs leave S.daily "".
+     The first mage to use the omen claims it (cast event field omen, S.omenBy, omenFx); the rune then keeps their colour.
+   - Reaction codex (M.codex, renderCodex): names of reactions the player has caused; the sanctum shows the rest as silhouettes.
    - Drop-in art: PNG sheets published as art/<id>.png replace the drawn
      sprites (see ART below for the frame layout). Never delete art files.
    DIRECTION FROM THE PLAYER:
@@ -321,16 +336,19 @@ details .body b{color:var(--chalk);font-weight:500}
      changes (up to roughly 400 changed lines). After that date, one small
      change per run.
    BACKLOG (take from the top, remove when done, add new ideas at the end):
-     1. Endless mode after floor 8 with a best-depth record.
-     2. A daily seeded climb so every player meets the same ladder.
-     3. Reaction codex: the sanctum shows every reaction from REACTIONS as a silhouette until the player first triggers it, then its name and pixel effect (saved as a new M field with a default in newMeta()).
-     4. Leitmotifs: each rival gets a short four-note motif in their hall's mode that the generative score (MUS) weaves in while they channel, and a triumphant variation of the player's own motif after a grand combination.
-     5. Signature spells: a grimoire spell that has landed a finishing blow gets a gold edge on its chip and its own title card in the kill cam the next time it ends a duel.
-     6. Ink wounds: in the Unwritten's second phase, every condition the player creates is drawn as handwriting across the ruled sky, and the boss can "cross out" one each round unless the player's spell is inspired (4+).
-     7. Weather duels: when both mages have a condition of their own on the field, the hall's sky visibly splits between their colours, and a grand combination that uses one condition from each side lands as a "Stolen Sky" with its own title card.
-     8. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
+     1. Signature spells: a grimoire spell that has landed a finishing blow gets a gold edge on its chip and its own title card in the kill cam the next time it ends a duel.
+     2. Ink wounds: in the Unwritten's second phase, every condition the player creates is drawn as handwriting across the ruled sky, and the boss can "cross out" one each round unless the player's spell is inspired (4+).
+     3. Weather duels: when both mages have a condition of their own on the field, the hall's sky visibly splits between their colours, and a grand combination that uses one condition from each side lands as a "Stolen Sky" with its own title card.
+     4. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
+     5. Echoes of the deep: beyond the tower, each rival returns carrying one spell from the player's own grimoire (rewritten in their element), so the deeper floors answer the player's favourite combinations with their own.
+     6. Spell scars: a lethal cataclysm or grand combination leaves a lasting pixel scar on the arena floor (scorch, frost crack, flood line, rooted earth) for the rest of the duel, so the hall remembers the biggest magic cast in it.
+     7. Answering themes: when the player exploits a condition a rival made, the score briefly quotes that rival's leitmotif inverted (motifOf mirrored) on the player's horn, so stealing their magic is heard as well as seen.
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-21",t:"Every rival now has a four-note theme of their own that the music sings while they gather a spell, and a grand combination of yours is answered by your own triumphant theme.",ru:"У каждого соперника теперь своя тема из четырёх нот: музыка поёт её, пока он собирает заклинание, а на вашу великую комбинацию отвечает ваша собственная победная тема."},
+  {d:"2026-11-21",t:"On today's climb, the mage who uses the omen first now claims it: a shaft of light falls from the rune to them with a title card and a chime, and the rune keeps their colour for the rest of the duel; the update notes are now in Russian too.",ru:"В восхождении дня маг, первым использовавший знамение, теперь забирает его себе: луч света падает от руны к нему, появляется титр и звучит перезвон, а руна до конца дуэли горит его цветом; заметки об обновлениях теперь тоже на русском."},
+  {d:"2026-11-20",t:"Today's climb: once a day the tower is the same for everyone, with the same rivals, the same relics on offer and one omen, a condition that glows as a rune in the sky and already lies on the floor when every duel begins; and the sanctum now keeps a codex of every reaction you have discovered.",ru:"Восхождение дня: раз в день башня одна на всех — те же соперники, те же реликвии в награду и одно знамение: условие, которое горит руной в небе и уже лежит на поле в начале каждой дуэли; а в святилище теперь есть кодекс всех открытых вами реакций."},
+  {d:"2026-11-20",t:"After you defeat the Unwritten you can now climb beyond the tower, where a rift opens in the sky, rivals return stronger, the Unwritten waits on every eighth floor, and your deepest floor is remembered.",ru:"Победив Ненаписанного, теперь можно подняться за пределы башни: в небе открывается разлом, соперники возвращаются сильнее, Ненаписанный ждёт на каждом восьмом этаже, а самый дальний этаж запоминается."},
   {d:"2026-11-20",t:"Halfway up the tower you now reach the Moonlit Altar, a quiet shrine with a cold blue flame, where you choose to recover all your life, take one more relic, or meditate for 40 motes before the next rival.",ru:"На полпути вверх по башне теперь ждёт Лунный алтарь — тихое место с холодным синим пламенем, где перед следующим соперником можно восстановить всю жизнь, взять ещё одну реликвию или медитировать ради 40 искр."},
   {d:"2026-11-20",t:"A new rival climbs the tower: Aurel Vane, the Gale Saint, who duels on a terrace above the clouds at dawn, blinds you with light and threads it with wind into a Solar Gale. Dawn light and wind now react for anyone who joins them.",ru:"В башне новый соперник: Аурель Вейн, святой ветров. Он сражается на террасе над облаками на рассвете, ослепляет светом и сплетает его с ветром в Солнечный вихрь. Свет и ветер теперь вступают в реакцию у любого, кто их соединит."},
   {d:"2026-11-19",t:"The Unwritten now has a second phase: at half life it tears the page, the hall turns into a ruled sheet under a black sun, and it fights on from a darker book, but the ink and blank page it leaves behind make an Eclipse for whoever joins them first. Mages now kneel when nearly beaten, reel from heavy blows and raise the staff in victory.",ru:"У Ненаписанного появилась вторая фаза: на половине жизни он рвёт страницу, зал превращается в разлинованный лист под чёрным солнцем, и он сражается дальше по более тёмной книге. Но чернила и чистый лист, которые он оставляет, дают Затмение тому, кто первым их соединит. Маги теперь падают на колено, когда почти побеждены, отшатываются от тяжёлых ударов и поднимают посох в победе."},
@@ -340,16 +358,16 @@ const CHANGELOG=[
   {d:"2026-11-19",t:"Wild magic. Claude now rates how inspired each spell is, and inspiration multiplies its power up to two and a half times. Inspired spells can surge with wild magic. Describe something that would plainly end a mage and it becomes a cataclysm: fatal if it lands, but fragile while it gathers.",ru:"Дикая магия. Claude теперь оценивает вдохновение каждого заклинания, и оно умножает силу до двух с половиной раз. Вдохновенные заклинания могут вскипеть дикой магией. Опишите то, что явно уничтожит мага, и это станет катаклизмом: смертельным, если дойдёт, но хрупким, пока собирается."},
   {d:"2026-11-19",t:"On the website you can now use your own free AI key for written spells instead of the family passcode, with step-by-step help on getting one from OpenRouter for free.",ru:"На сайте теперь можно писать заклинания со своим бесплатным ключом ИИ вместо семейного пароля. Есть пошаговая инструкция, как бесплатно получить ключ OpenRouter."},
   {d:"2026-11-19",t:"Every duel now ends with a finale: its last moves replay as a short anime-style film, with slow motion, a cut-in for every spell and a closing title, and you can save it to share. The game speaks Russian too: choose the language on the home screen or with the RU/EN chip. Life and mana now sit on the arena, and the Cast and Keep channelling button sits right under it.",ru:"Каждая дуэль теперь заканчивается финалом: последние ходы проигрываются как короткий фильм в стиле аниме, с замедлением, вставкой на каждое заклинание и финальным титром, и его можно сохранить и отправить. Игра теперь говорит по-русски: выберите язык на главном экране или кнопкой RU/EN. Жизнь и мана теперь показаны прямо на арене, а кнопка «Колдовать» и «Продолжать подготовку» — сразу под ней."},
-  {d:"2026-11-19",t:"Conditions now react with each other: use two at once and the arena plays Chain Lightning along a flood, a Freezing Wave, a Firestorm, Wildfire racing through roots, an Eclipse and more, each with its own animation and sound. Early rivals are a touch less sturdy."},
-  {d:"2026-11-18",t:"Every spell you write now has its own animation and colours: meteors, lightning from the sky, chains, vortices, pillars of fire, swarms and more, chosen from your words. The screen no longer shakes, and the page holds still between turns."},
-  {d:"2026-11-18",t:"Rounds play out at a watchable pace: every spell gets its own moment, damage and titles linger, and you get control back only when the last effect has faded."},
-  {d:"2026-11-18",t:"Back to turns. Each round you and your rival choose at the same time, then the round plays out. Big spells take extra rounds to channel, so your rival gets a chance to answer them. Gather focus when you need mana."},
-  {d:"2026-11-18",t:"The duel is rebuilt around your imagination. Write a spell and it casts at once. The fight runs on a live clock that slows while you write. Floods, fire, storms and roots stay on the battlefield, and spells that use them become combinations that can end the duel. Every spell you write goes into your grimoire. The sliders and tempo buttons are gone; quick sigils remain for when you're stuck."},
-  {d:"2026-11-18",t:"Every rival now makes an entrance: their name rises over the arena as they step out of a pillar of light, and the weather of their hall rolls in."},
-  {d:"2026-11-17",t:"The mages are redrawn: taller figures with rippling capes and tall staves, and every rival now has a silhouette of their own."},
-  {d:"2026-11-17",t:"Power you can feel: sound, a taller arena, sigils and levitation while you channel, a sky that darkens, cataclysms that fill the screen, rivals who talk back."},
-  {d:"2026-11-17",t:"The climb: eight floors, relics after each win, motes for lasting upgrades. Pixel arena with animated magic."},
-  {d:"2026-11-16",t:"First duel: write any spell, Claude referees."}
+  {d:"2026-11-19",t:"Conditions now react with each other: use two at once and the arena plays Chain Lightning along a flood, a Freezing Wave, a Firestorm, Wildfire racing through roots, an Eclipse and more, each with its own animation and sound. Early rivals are a touch less sturdy.",ru:"Условия теперь вступают в реакцию друг с другом: используйте два сразу, и арена покажет Цепную молнию по воде, Ледяную волну, Огненную бурю, Лесной пожар по корням, Затмение и многое другое, у каждой реакции своя анимация и звук. Первые соперники стали чуть слабее."},
+  {d:"2026-11-18",t:"Every spell you write now has its own animation and colours: meteors, lightning from the sky, chains, vortices, pillars of fire, swarms and more, chosen from your words. The screen no longer shakes, and the page holds still between turns.",ru:"Каждое написанное заклинание теперь получает свою анимацию и цвета: метеоры, молнии с неба, цепи, вихри, столпы огня, рои и многое другое — по вашим словам. Экран больше не трясётся, а страница не прыгает между ходами."},
+  {d:"2026-11-18",t:"Rounds play out at a watchable pace: every spell gets its own moment, damage and titles linger, and you get control back only when the last effect has faded.",ru:"Раунды идут в спокойном темпе: у каждого заклинания свой момент, урон и титры задерживаются на экране, а управление возвращается, только когда угаснет последний эффект."},
+  {d:"2026-11-18",t:"Back to turns. Each round you and your rival choose at the same time, then the round plays out. Big spells take extra rounds to channel, so your rival gets a chance to answer them. Gather focus when you need mana.",ru:"Снова ходы. Каждый раунд вы и соперник выбираете одновременно, а потом раунд разыгрывается. Сильным заклинаниям нужно несколько раундов подготовки, так что соперник успеет ответить. Когда не хватает маны, сосредоточьтесь."},
+  {d:"2026-11-18",t:"The duel is rebuilt around your imagination. Write a spell and it casts at once. The fight runs on a live clock that slows while you write. Floods, fire, storms and roots stay on the battlefield, and spells that use them become combinations that can end the duel. Every spell you write goes into your grimoire. The sliders and tempo buttons are gone; quick sigils remain for when you're stuck.",ru:"Дуэль перестроена вокруг вашего воображения. Напишите заклинание — и оно сработает. Вода, огонь, бури и корни остаются на поле, а заклинания, которые их используют, становятся комбинациями, способными закончить дуэль. Каждое написанное заклинание попадает в ваш гримуар. Ползунков и кнопок темпа больше нет; быстрые знаки остались на случай, если не приходит идея."},
+  {d:"2026-11-18",t:"Every rival now makes an entrance: their name rises over the arena as they step out of a pillar of light, and the weather of their hall rolls in.",ru:"Каждый соперник теперь появляется эффектно: его имя поднимается над ареной, когда он выходит из столпа света, и в зал приходит его погода."},
+  {d:"2026-11-17",t:"The mages are redrawn: taller figures with rippling capes and tall staves, and every rival now has a silhouette of their own.",ru:"Маги перерисованы: высокие фигуры в развевающихся плащах и с длинными посохами, и у каждого соперника свой силуэт."},
+  {d:"2026-11-17",t:"Power you can feel: sound, a taller arena, sigils and levitation while you channel, a sky that darkens, cataclysms that fill the screen, rivals who talk back.",ru:"Сила, которую чувствуешь: звук, высокая арена, знаки и левитация во время подготовки, темнеющее небо, катаклизмы на весь экран, соперники, которые отвечают."},
+  {d:"2026-11-17",t:"The climb: eight floors, relics after each win, motes for lasting upgrades. Pixel arena with animated magic.",ru:"Восхождение: восемь этажей, реликвии после каждой победы, искры для постоянных улучшений. Пиксельная арена с живой магией."},
+  {d:"2026-11-16",t:"First duel: write any spell, Claude referees.",ru:"Первая дуэль: напишите любое заклинание, Claude судит."}
 ];
 
 /*ENGINE-START*/
@@ -420,7 +438,9 @@ const TX={
   surgeLog:k=>({overcharge:"Wild magic surges and the spell overcharges",echo:"Wild magic surges and the battlefield echoes it",refund:"Wild magic surges and half the mana flows back",backlash:"Wild magic lashes back at you"})[k],
   fatalLog:"It is fatal.",lethalSaved:"a ward saves them by a thread",
   stLog:(k,you,n,r)=>({burn:(you?"you are":"they are")+" set burning ("+n+" a round, "+r+(r>1?" rounds)":" round)"),poison:"poison seeps into "+(you?"you":"them")+" ("+n+" a round, "+r+" rounds)",silence:(you?"you are":"they are")+" silenced for "+r+(r>1?" rounds":" round"),slow:(you?"your":"their")+" casting slows for "+r+(r>1?" rounds":" round"),weaken:(you?"your":"their")+" magic weakens for "+r+(r>1?" rounds":" round"),regen:(you?"you":"they")+" begin to mend ("+n+" a round)",haste:(you?"your":"their")+" casting quickens for "+r+(r>1?" rounds":" round"),empower:(you?"your":"their")+" power swells for "+r+(r>1?" rounds":" round")})[k],
-  floorOf:(n,m)=>"Floor "+n+" of "+m,
+  floorOf:(n,m)=>"Floor "+n+" of "+m,deepOf:n=>"Beyond the tower · floor "+n,
+  omenLog:n=>"Today's omen hangs over the floor: "+n+". Whoever uses it first makes it theirs.",
+  omenT:you=>you?"The omen answers you":"The omen answers your rival",
   dmg:n=>n+" damage",soaked:n=>" ("+n+" soaked by the ward)",wardAll:"the ward drinks all of it",wardRises:a=>"a ward of "+a+" rises",
   lifeBack:n=>n+" life returns",stolen:n=>n+" mana stolen",focusHolds:"Deep Focus holds your spell together",
   shatter:(mine,r,s)=>mine?r+"'s "+s+" shatters":"your "+s+" shatters",stagger:mine=>mine?"their casting staggers":"your casting staggers",
@@ -436,7 +456,9 @@ const TX={
   surgeLog:k=>({overcharge:"дикая магия вскипает, и заклинание перегружается",echo:"дикая магия вскипает, и поле боя отзывается эхом",refund:"дикая магия вскипает, и половина маны возвращается",backlash:"дикая магия бьёт по вам самим"})[k],
   fatalLog:"Это смертельно.",lethalSaved:"щит спасает их на волосок от гибели",
   stLog:(k,you,n,r)=>({burn:(you?"вы горите":"соперник горит")+" ("+n+" за раунд, раундов: "+r+")",poison:"яд проникает в "+(you?"вас":"соперника")+" ("+n+" за раунд, раундов: "+r+")",silence:(you?"вы немеете":"соперник немеет")+" (раундов: "+r+")",slow:(you?"ваше":"его")+" колдовство замедляется (раундов: "+r+")",weaken:(you?"ваша":"его")+" магия слабеет (раундов: "+r+")",regen:(you?"вы начинаете":"соперник начинает")+" восстанавливаться ("+n+" за раунд)",haste:(you?"ваше":"его")+" колдовство ускоряется (раундов: "+r+")",empower:(you?"ваша":"его")+" сила растёт (раундов: "+r+")"})[k],
-  floorOf:(n,m)=>"Этаж "+n+" из "+m,
+  floorOf:(n,m)=>"Этаж "+n+" из "+m,deepOf:n=>"За башней · этаж "+n,
+  omenLog:n=>"Над полем — знамение дня: «"+n+"». Кто первым его использует, тому оно и служит.",
+  omenT:you=>you?"Знамение отвечает вам":"Знамение отвечает сопернику",
   dmg:n=>n+" урона",soaked:n=>" ("+n+" поглотил щит)",wardAll:"щит поглощает всё",wardRises:a=>"поднимается щит на "+a,
   lifeBack:n=>"возвращается "+n+" жизни",stolen:n=>"украдено "+n+" маны",focusHolds:"глубокая сосредоточенность удерживает ваше заклинание",
   shatter:(mine,r,s)=>mine?"«"+s+"» соперника рассыпается":"ваше «"+s+"» рассыпается",stagger:mine=>mine?"колдовство соперника сбивается":"ваше колдовство сбивается",
@@ -599,18 +621,26 @@ const UPGRADES=[
   {id:"focus",name:"Deep Focus",text:"Once per duel, a spell of yours that would be broken only staggers",costs:[120]},
   {id:"study",name:"Quick Study",text:"Begin each climb with a random relic",costs:[150]}
 ];
-function newMeta(){return {motes:0,life:0,up:{},best:0,runs:0,wins:0,rev:0,book:[],lang:""};}
+function newMeta(){return {motes:0,life:0,up:{},best:0,runs:0,wins:0,rev:0,book:[],lang:"",deep:0,daily:{d:"",best:0},codex:[]};}
 function fresh(){
   return {v:2,phase:"home",floor:1,t:0,round:1,roundEnd:0,ladder:[],relics:[],choices:[],earned:0,
     you:{hp:100,maxHp:100,mana:60,maxMana:100,regen:4,cast:null,focusUsed:false},
     foe:{hp:60,maxHp:60,mana:60,maxMana:100,regen:4.5,cast:null,nextAt:1500},
-    effects:[],field:[],log:[],ev:[],uses:{},queued:null,foeMul:1,draftText:"",bossPhase:0,rested:false,restRelic:""};
+    effects:[],field:[],log:[],ev:[],uses:{},queued:null,foeMul:1,draftText:"",bossPhase:0,rested:false,restRelic:"",endless:false,daily:"",omenBy:""};
 }
 let S=fresh(),M=newMeta();
 const has=id=>S.relics.includes(id);
 const lvl=id=>(M.up&&M.up[id])||0;
 const other=w=>w==="you"?"foe":"you";
-function rival(){return S.floor>=FLOORS?BOSS:(RIVALS.find(r=>r.id===S.ladder[S.floor-1])||RIVALS[0]);}
+/* Endless (S.endless): after the Unwritten falls the player may climb on past floor 8. The ladder keeps reshuffling,
+   the Unwritten returns on every eighth floor, the altar returns once per eight floors, and M.deep keeps the deepest floor cleared. */
+function rivalAt(n){
+  if(n===FLOORS||(n>FLOORS&&n%FLOORS===0)) return BOSS;
+  while(S.ladder.length<n) S.ladder=S.ladder.concat(shuffled(RIVALS.map(r=>r.id),rngFor("ladder"+S.ladder.length)));
+  return RIVALS.find(r=>r.id===S.ladder[n-1])||RIVALS[0];
+}
+function rival(){return rivalAt(S.floor);}
+function floorName(n){return n>FLOORS?tx("deepOf",n):tx("floorOf",n,FLOORS);}
 const ward=who=>S.effects.find(e=>e.owner===who&&e.absorb>0);
 function wardMult(wel,sel){if(EL[wel]&&EL[wel].beats===sel) return 2;if(EL[sel]&&EL[sel].beats===wel) return .5;return 1;}
 const BOOKS={};
@@ -729,27 +759,45 @@ function addRelic(id){
   if(id==="well") S.you.maxMana+=25;
   if(id==="lily") S.you.regen+=4/3;
 }
-function shuffled(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function startRun(){
+function shuffled(a,r){a=a.slice();r=r||Math.random;for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+/* Today's climb (S.daily = the UTC date "YYYY-MM-DD", "" for an ordinary climb). Everyone who climbs on the same day meets the same
+   ladder, is offered the same relics on each floor and duels under the same omen: one battlefield condition that is already on the
+   floor when every duel begins, free for whichever mage uses it first. Only the ladder, offers and omen are seeded; rivals still think
+   for themselves. M.daily keeps the most floors cleared today. */
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function seeded(key){let a=hashStr(key);return ()=>{a=(a+0x6D2B79F5)|0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
+const rngFor=k=>S.daily?seeded(S.daily+"|"+k):Math.random;
+const dayKey=ms=>new Date(ms).toISOString().slice(0,10);
+function omenOf(day){const t=Object.keys(TAGS);return day?t[Math.floor(seeded(day+"|omen")()*t.length)]:"";}
+/* relic offers: the whole list in a seeded order, minus what the player holds, so a daily offer is the same for everyone */
+const offer=(k,n)=>shuffled(RELICS,rngFor(k)).filter(r=>!has(r.id)).slice(0,n).map(r=>r.id);
+function markDaily(cleared){
+  if(!S.daily) return;
+  if(!M.daily||M.daily.d!==S.daily) M.daily={d:S.daily,best:0};
+  M.daily.best=Math.max(M.daily.best||0,cleared);
+}
+function startRun(daily){
   const keep={draftText:S.draftText||""};
-  S=fresh();Object.assign(S,keep);
-  let pool=shuffled(RIVALS.map(r=>r.id));
-  while(pool.length<FLOORS-1) pool=pool.concat(shuffled(RIVALS.map(r=>r.id)));
+  S=fresh();Object.assign(S,keep);S.daily=daily||"";
+  let pool=shuffled(RIVALS.map(r=>r.id),rngFor("ladder0"));
+  while(pool.length<FLOORS-1) pool=pool.concat(shuffled(RIVALS.map(r=>r.id),rngFor("ladder"+pool.length)));
   S.ladder=pool.slice(0,FLOORS-1);
   S.you.maxHp=100+10*lvl("vit");S.you.hp=S.you.maxHp;
   S.you.maxMana=100+10*lvl("well");S.you.regen=4+lvl("flow");
-  if(lvl("study")) addRelic(shuffled(RELICS)[0].id);
+  if(lvl("study")) addRelic(offer("study",1)[0]);
   startDuel();
 }
 function startDuel(){
   const R=rival();
   S.phase="duel";S.bossPhase=0;S.t=0;S.effects=[];S.field=[];S.ev=[];S.uses={};S.queued=null;S.st={you:[],foe:[]};S.silEnd={};S.tickRound=1;
-  S.you.cast=null;S.you.focusUsed=false;S.you.mana=Math.min(S.you.maxMana,60+10*lvl("kindle"));
-  const hp=R.boss?240:70+S.floor*14;
+  S.you.cast=null;S.you.focusUsed=false;S.you.mana=Math.min(S.you.maxMana,60+10*lvl("kindle"));S.omenBy="";
+  const deep=Math.max(0,S.floor-FLOORS),hp=Math.round((R.boss?240:70+S.floor*14)*(1+.05*deep));
   S.foe={hp,maxHp:hp,mana:60,maxMana:100,regen:3.5+.25*S.floor,cast:null,nextAt:0,gather:false};
-  S.foeMul=R.boss?1.3:.8+.065*S.floor;
+  S.foeMul=(R.boss?1.3:.8+.065*S.floor)+.025*deep;
   if(has("gambit")) S.effects.push({owner:"you",name:"Opening Gambit",absorb:15,el:"void",until:6000});
-  S.log=[{t:0,title:tx("floorOf",S.floor,FLOORS),text:L(R.name)+", "+L(R.epithet)+". "+L(R.blurb)}];
+  S.log=[{t:0,title:floorName(S.floor),text:L(R.name)+", "+L(R.epithet)+". "+L(R.blurb)}];
+  const om=omenOf(S.daily);
+  if(om){S.field.push({tag:om,name:TAGS[om].name,by:"",born:-350,until:7000});S.log[0].text+=" "+tx("omenLog",L(TAGS[om].name));}
   S.round=1;S.roundEnd=0;startRound();
 }
 /* Each round both mages commit at once: the rival chooses here, before it can see what the player picks. */
@@ -785,7 +833,9 @@ function land(who){
   let k=used.length;if(k&&mine&&has("prism")) k++;k=Math.min(3,k);
   const grand=k>=2,mult=1+.5*k;
   if(used.length) S.field=S.field.filter(f=>!used.includes(f));
-  ev.push({t:"cast",who,insp:mine&&c.written?c.insp:0,lethal:!!c.lethal,form:c.form,shape:c.shape,motion:c.motion,palette:c.palette,count:c.count,el:c.el,power:c.power,name:c.name,combo:k,tags:used.map(f=>f.tag),react:reactionOf(used.map(f=>f.tag)),stolen:used.some(f=>f.by&&f.by!==who)});
+  ev.push({t:"cast",who,insp:mine&&c.written?c.insp:0,lethal:!!c.lethal,form:c.form,shape:c.shape,motion:c.motion,palette:c.palette,count:c.count,el:c.el,power:c.power,name:c.name,combo:k,tags:used.map(f=>f.tag),react:reactionOf(used.map(f=>f.tag)),stolen:used.some(f=>f.by&&f.by!==who),omen:used.some(f=>!f.by&&S.daily&&f.tag===omenOf(S.daily))&&!S.omenBy?omenOf(S.daily):""});
+  /* Omen duels: the first mage to use today's omen claims it; the rune in the sky keeps their colour for the rest of the duel. */
+  if(ev[0].omen) S.omenBy=who;
   const bits=[];
   const surge=mine&&c.written?rollSurge(c):null,sm=surge==="overcharge"?1.6:1;
   if(surge){ev.push({t:"surge",who,kind:surge});bits.push(tx("surgeLog",surge));}
@@ -829,6 +879,8 @@ function land(who){
   if(surge==="backlash"){const b=Math.max(4,Math.round((dealt||c.power*3)*.12));S.you.hp=Math.max(1,S.you.hp-b);ev.push({t:"hit",who:"you",n:b,soaked:0});}
   if(c.creates.length) bits.push(tx("spreads",c.creates.map(x=>L(x.name||TAGS[x.tag].name))));
   const rx=reactionOf(used.map(f=>f.tag));
+  /* the reaction codex (M.codex) remembers every reaction the player has caused */
+  if(mine&&rx){if(!Array.isArray(M.codex)) M.codex=[];if(!M.codex.includes(rx.name)){M.codex.push(rx.name);ev.push({t:"discover",name:rx.name});}}
   const head=k?tx("combo",grand)+(rx?", "+L(rx.name):"")+": "+used.map(f=>L(f.name)).join(" + ")+". ":"";
   const sn=mine&&c.written?c.name:L(c.name);
   const flavour=(mine&&c.impact?c.impact:tx("flavour",mine,L(R.name),sn,c.el,tier(c.power),c.damage>0))+(S[o].hp<=0?" "+tx("fatalLog"):"");
@@ -880,11 +932,13 @@ function checkEnd(){
   if(S.you.hp<=0&&S.foe.hp<=0){S.you.hp=1;pushLog(tx("doubleFall"),tx("doubleFallText"));}
   if(S.foe.hp<=0){
     S.you.cast=null;S.foe.cast=null;S.queued=null;
-    gain(8+4*S.floor);M.best=Math.max(M.best,S.floor);
-    if(S.floor>=FLOORS){gain(60);M.wins++;M.runs++;S.phase="won";}
-    else{S.choices=shuffled(RELICS.filter(r=>!has(r.id))).slice(0,3).map(r=>r.id);S.phase="reward";}
+    gain(8+4*Math.min(S.floor,FLOORS*2));M.best=Math.max(M.best,Math.min(FLOORS,S.floor));
+    if(S.endless) M.deep=Math.max(M.deep||0,S.floor);
+    markDaily(S.floor);
+    if(S.floor===FLOORS&&!S.endless){gain(60);M.wins++;M.runs++;S.phase="won";}
+    else{if(S.floor%FLOORS===0){gain(30);S.rested=false;}S.choices=offer("relic"+S.floor,3);S.phase="reward";}
   }else if(S.you.hp<=0){
-    S.you.cast=null;S.foe.cast=null;S.queued=null;M.best=Math.max(M.best,S.floor-1);M.runs++;S.phase="dead";
+    S.you.cast=null;S.foe.cast=null;S.queued=null;M.best=Math.max(M.best,Math.min(FLOORS,S.floor-1));if(!S.endless) M.runs++;markDaily(S.floor-1);S.phase="dead";
   }
 }
 function update(dt){
@@ -898,13 +952,19 @@ function update(dt){
     if(S[w].cast&&S.t>=S[w].cast.end){land(w);checkEnd();if(S.phase!=="duel") return;}
   }
 }
+function enterEndless(){
+  if(S.phase!=="won") return;
+  S.endless=true;S.rested=false;M.deep=Math.max(M.deep||0,FLOORS);
+  S.you.hp=S.you.maxHp;
+  S.choices=offer("deep",3);S.phase="reward";
+}
 function takeRelic(id){
   addRelic(id);S.floor++;
   S.you.hp=clamp(S.you.hp+30,0,S.you.maxHp);
   /* Halfway up, the climb pauses once at a shrine (phase "rest") before the next rival. */
-  if(S.floor===REST_AT&&!S.rested){
+  if(S.floor%FLOORS===REST_AT&&!S.rested){
     S.phase="rest";S.field=[];S.effects=[];S.st={you:[],foe:[]};S.you.cast=null;S.foe.cast=null;S.queued=null;
-    const r=shuffled(RELICS.filter(x=>!has(x.id)))[0];S.restRelic=r?r.id:"";return;
+    S.restRelic=offer("rest"+S.floor,1)[0]||"";return;
   }
   startDuel();
 }
@@ -939,6 +999,7 @@ Object.assign(TX.en,{
       <p><b>Your grimoire.</b> Every spell you write is kept. Recast it with one tap; each recast in the same duel costs a little more mana, so new ideas stay stronger than old ones.</p>
       <p><b>Quick sigils.</b> Spark, Shield and Snap cost nothing to think up and are deliberately weak. Use them while you learn, or when you are stuck.</p>
       <p><b>The finale.</b> When a duel ends, its last moves play again as a short film you can save and share.</p>
+      <p><b>Today's climb.</b> Once a day the tower is the same for everyone: the same rivals, the same relics on offer, and one omen, a condition already on the floor when each duel begins. Use it before your rival does.</p>
       <p><b>Usage.</b> Each new spell you write asks Claude once. Recasts, sigils and your rivals cost nothing.</p>`,
   grimoire:"Your grimoire · tap to recast",sigilsLabel:"Quick sigils · free and weak, for when you're stuck",chronicle:"Chronicle of this duel",
   soundOn:"Sound on",soundOff:"Sound off",floorChip:(f,n)=>"Floor <b>"+f+"/"+n+"</b>",roundChip:r=>" · Round <b>"+r+"</b>",motesChip:m=>"Motes <b>"+m+"</b>",
@@ -974,6 +1035,8 @@ Object.assign(TX.en,{
   restHeal:"Rest by the flame",restHealText:(h,m)=>"Recover all your life: "+h+" → "+m+".",restRelic:"Take the offering",restMotes:"Meditate",
   restMotesText:n=>"Carry "+n+" motes home to the sanctum.",restNone:"The altar is empty: you already hold every relic.",restNext:(f,n)=>"Beyond it, on floor "+f+", "+n+" waits.",
   yields:n=>n+" yields.",rewardNote:(m,f,n)=>"+"+m+" motes. You catch your breath and recover 30 life. Take one relic up to floor "+f+", where "+n+" waits.",
+  endlessGo:"Climb beyond the tower",endlessNote:"The tower is yours, but the stair goes on into the dark. Rivals return stronger, the Unwritten waits on every eighth floor, and your deepest floor is remembered.",
+  deepRec:n=>"Deepest floor beyond the tower: "+n+". ",deepChip:f=>"Beyond <b>"+f+"</b>",climbOn:"Climb on",noRelics:"No relic is left to take. The stair goes on.",
   wonText:"The Unwritten falls silent. The tower is yours.",lostText:(f,n)=>"You fall on floor "+f+". "+n+" keeps the circle.",
   earned:n=>"This climb earned "+n+" motes. They are yours to keep, and so is your grimoire.",toSanctum:"Return to the sanctum",
   best:(b,n)=>"Best climb: floor "+b+" of "+n+". ",towers:w=>"Towers taken: "+w+". ",holds:n=>"Your grimoire holds "+n+" spell"+(n>1?"s":"")+". ",
@@ -991,7 +1054,11 @@ Object.assign(TX.en,{
   errCode:"That passcode isn't right. Check it and enter it again.",errSetup:"The game's spell referee isn't set up yet. Your grimoire and the quick sigils still work.",
   codeSaved:"Passcode saved on this device.",shareTitle:"The Unwritten Duel",
   finishingBlow:"Finishing blow",stolenSub:mine=>mine?"Turned on its maker":"Stolen from you",
-  phaseSub:"Second phase · a new book of spells"
+  phaseSub:"Second phase · a new book of spells",
+  dailyBegin:"Today's climb",dailyTag:"Today's climb",
+  dailyNote:(o,b)=>"Today's climb is the same for everyone who plays it today: the same rivals, the same relics on offer, and the same omen, "+o+", already on the floor when every duel begins."+(b!=null?" You have cleared "+b+" floor"+(b===1?"":"s")+" today.":""),
+  dailyRec:n=>"Today's climb: "+n+" floor"+(n===1?"":"s")+" cleared. ",
+  codexLabel:(n,m)=>"Reaction codex · "+n+" of "+m+" discovered",newReaction:"New reaction!",unknownRx:"Undiscovered"
 });
 Object.assign(TX.ru,{
   lede:"У вас нет книги заклинаний. Напишите любое заклинание, какое придумаете, — и оно тут же сотворится. Потопы, огонь, грозы и корни остаются на поле боя, и следующее заклинание, которое их использует, может закончить дуэль.",
@@ -1007,6 +1074,7 @@ Object.assign(TX.ru,{
       <p><b>Ваш гримуар.</b> Каждое написанное заклинание сохраняется. Повторите его одним касанием; каждый повтор в той же дуэли стоит чуть больше маны, поэтому новые идеи сильнее старых.</p>
       <p><b>Быстрые знаки.</b> Искорку, Щит и Срыв не нужно придумывать, и они нарочно слабые. Пользуйтесь ими, пока учитесь, или когда не знаете, что написать.</p>
       <p><b>Финал.</b> Когда дуэль заканчивается, её последние ходы проигрываются как короткий фильм, который можно сохранить и отправить.</p>
+      <p><b>Восхождение дня.</b> Раз в день башня одна на всех: те же соперники, те же реликвии в награду и одно знамение — условие, которое уже лежит на поле в начале каждой дуэли. Используйте его раньше соперника.</p>
       <p><b>Расход.</b> Каждое новое написанное заклинание — один запрос к Claude. Повторы, знаки и соперники ничего не стоят.</p>`,
   grimoire:"Ваш гримуар · коснитесь, чтобы повторить",sigilsLabel:"Быстрые знаки · бесплатные и слабые, на случай если вы в тупике",chronicle:"Летопись этой дуэли",
   soundOn:"Звук вкл",soundOff:"Звук выкл",floorChip:(f,n)=>"Этаж <b>"+f+"/"+n+"</b>",roundChip:r=>" · Раунд <b>"+r+"</b>",motesChip:m=>"Искры <b>"+m+"</b>",
@@ -1042,6 +1110,8 @@ Object.assign(TX.ru,{
   restHeal:"Отдохнуть у огня",restHealText:(h,m)=>"Восстановить всю жизнь: "+h+" → "+m+".",restRelic:"Принять дар",restMotes:"Медитировать",
   restMotesText:n=>"Унести домой "+n+" искр для святилища.",restNone:"Алтарь пуст: у вас уже есть все реликвии.",restNext:(f,n)=>"Дальше, на этаже "+f+", ждёт "+n+".",
   yields:n=>n+" сдаётся.",rewardNote:(m,f,n)=>"+"+m+" искр. Вы переводите дух и восстанавливаете 30 жизни. Возьмите одну реликвию на этаж "+f+", где ждёт "+n+".",
+  endlessGo:"Подняться за пределы башни",endlessNote:"Башня ваша, но лестница уходит дальше во тьму. Соперники возвращаются сильнее, Ненаписанный ждёт на каждом восьмом этаже, а самый дальний этаж запоминается.",
+  deepRec:n=>"Самый дальний этаж за башней: "+n+". ",deepChip:f=>"За башней <b>"+f+"</b>",climbOn:"Дальше вверх",noRelics:"Реликвий больше не осталось. Лестница ведёт дальше.",
   wonText:"Ненаписанный умолкает. Башня ваша.",lostText:(f,n)=>"Вы падаете на этаже "+f+". Круг остаётся за: "+n+".",
   earned:n=>"Это восхождение принесло "+n+" искр. Они ваши навсегда, как и гримуар.",toSanctum:"Вернуться в святилище",
   best:(b,n)=>"Лучшее восхождение: этаж "+b+" из "+n+". ",towers:w=>"Взято башен: "+w+". ",holds:n=>"В гримуаре заклинаний: "+n+". ",
@@ -1059,7 +1129,11 @@ Object.assign(TX.ru,{
   errCode:"Пароль неверный. Проверьте и введите снова.",errSetup:"Судья заклинаний ещё не настроен. Гримуар и быстрые знаки работают.",
   codeSaved:"Пароль сохранён на этом устройстве.",shareTitle:"Ненаписанная дуэль",
   finishingBlow:"Добивающий удар",stolenSub:mine=>mine?"Обращено против создателя":"Украдено у вас",
-  phaseSub:"Вторая фаза · новая книга заклинаний"
+  phaseSub:"Вторая фаза · новая книга заклинаний",
+  dailyBegin:"Восхождение дня",dailyTag:"Восхождение дня",
+  dailyNote:(o,b)=>"Восхождение дня сегодня одно на всех: те же соперники, те же реликвии в награду и то же знамение — «"+o+"» уже лежит на поле в начале каждой дуэли."+(b!=null?" Сегодня вы прошли этажей: "+b+".":""),
+  dailyRec:n=>"Восхождение дня: пройдено этажей — "+n+". ",
+  codexLabel:(n,m)=>"Кодекс реакций · открыто "+n+" из "+m,newReaction:"Новая реакция!",unknownRx:"Не открыта"
 });
 
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1286,6 +1360,7 @@ const SFX={
   begin(el){tone(el==="ember"?220:el==="tide"?330:el==="thorn"?165:440,el==="void"?660:440,.25,"triangle",.07);},
   combo(k){MUS.swell(k);[196,262,330,392,523].slice(0,2+k).forEach((f,i)=>tone(f,f*1.01,.5,"sawtooth",.1,i*.06));tone(55,40,1.2,"sine",.5);hiss(1,.3,300,3000);},
   field(){hiss(.6,.15,200,1200);tone(110,140,.5,"triangle",.08);},
+  omen(){[523,659,784,1047].forEach((f,i)=>tone(f,f,1.1,"sine",.07,i*.09));tone(131,131,1.4,"triangle",.12);},
   hit(n){const v=clamp(.25+n/45,.25,.95);tone(140,34,.35+n/90,"sine",v);hiss(.22+n/140,v*.6,2600,160);},
   block(){tone(1200,900,.12,"triangle",.2);tone(1800,1500,.1,"sine",.12,.03);},
   ward(){[660,880,1320].forEach((f,i)=>tone(f,f*1.01,.5,"sine",.16,i*.07));},
@@ -1371,8 +1446,15 @@ MUS.swell=function(k){
       o.connect(lp);lp.connect(gn);gn.connect(MUS.bus);o.start(t);o.stop(t+3.3);
     }
     mDrum(t+1.1,.5);
+    if(k>=2){const L=MUS.stepS*.8;mMotif(th,MY_MOTIF.map(d=>d+root),t+1.2,L,1,"sawtooth",.05,2600);mMotif(th,MY_MOTIF.map(d=>d+root+2),t+1.2,L,1,"triangle",.035,4000);}
   }catch(e){}
 };
+/* leitmotifs: every rival owns four scale degrees drawn from its name; the score sings them in the hall's mode, on a
+   horn an octave down, every other bar while that rival channels. The player's own motif rings out in triumph after a
+   grand combination (MUS.swell with k>=2). */
+const MY_MOTIF=[0,4,2,7];
+function motifOf(id){let h=7;for(const ch of String(id||"")) h=(Math.imul(h,31)+ch.charCodeAt(0))>>>0;const m=[0];for(let i=0;i<3;i++){h=(Math.imul(h,1103515245)+12345)>>>0;m.push(m[i]+[-3,-2,-1,1,2,3,4,5][(h>>>16)&7]);}return m;}
+function mMotif(th,m,t,L,oct,type,vol,cut){m.forEach((d,i)=>mNote(mDeg(th,d,oct),t+i*L*(i===3?2.2:2),i===3?L*6:L*2.4,type,vol,cut,.03));}
 function musTarget(){
   if(S.phase==="home") return .05;
   if(S.phase!=="duel") return .02;
@@ -1390,6 +1472,7 @@ function musStep(t,s){
   if(I>.3&&(st%8===0||st%8===3||st%8===6)) mNote(mDeg(th,root,-2),t,L*2.4,"sawtooth",.05+I*.05,200+I*700,.01);
   if(I>.5&&(st===0||st===8||(I>.72&&(st===6||st===14)))) mDrum(t,.25+I*.3);
   if(I>.62&&st%2===1) mNote(2200,t,.05,"square",.008,6000,.002);
+  if(st===0&&bar%2===1&&S.phase==="duel"&&S.foe&&S.foe.cast){const r=rival();if(r) mMotif(th,motifOf(r.id).map(d=>d+root),t,L,0,"sawtooth",.045+I*.02,700+I*900);}
   const p=I<.12?.04:.06+I*.6;
   if(Math.random()<p){
     const arp=[0,2,4,7,9,11],k=I>.6?arp[st%arp.length]:arp[Math.floor(Math.random()*arp.length)];
@@ -1585,6 +1668,7 @@ function impact(e,c){
   else if(e.t==="delayed"){floatText(e.who,tx("staggered"),"info");}
   else if(e.t==="status"){const d=STATUS[e.kind],q=chest(e.who);spark(q.x,q.y,d.c,30,.1,800,e.kind==="regen");floatText(e.who,tx("stChip",e.kind,e.n,e.rounds),"info");}
   else if(e.t==="surge"){const q=gem(e.who,true);spark(q.x,q.y,["#ffffff","#ffd27a","#c08cff","#7ff0d0"],60,.16,900);A.flash=now+200;titleCard(tx("surgeT"),"combo",tx("surgeK",e.kind));SFX.combo(2);}
+  else if(e.t==="discover"){floatAt(72,FLOOR-44,tx("newReaction"),"heal");tone(784,1568,.6,"triangle",.08,.1);}
   else if(e.t==="wardbreak"){spark(p.x,p.y,["#ffffff","#cfe9ff"],26,.12,560);floatText(e.who,tx("wardDown"),"info");SFX.wardDown();}
 }
 const FREEZE=calm?250:750;
@@ -1605,7 +1689,7 @@ function play(ev){
   if(ev[0]&&ev[0].t==="tick"){for(const e of ev.slice(1)) impact(e,e.dot?STATUS[e.dot].c:EL.void.c);return 900*(A.slow||1)+(fatal?FREEZE:0);}
   let arrive=0,pal=EL.void.c,hold=0;
   for(const e of ev){
-    if(e.t==="cast"){launch(e);arrive=estFor(e);pal=palOf(e);hold=Math.max(hold,holdFor(e));}
+    if(e.t==="cast"){launch(e);arrive=estFor(e);pal=palOf(e);hold=Math.max(hold,holdFor(e));if(e.omen){const ee=e;setTimeout(()=>omenFx(ee),(arrive+250)*(A.slow||1));hold+=700;}}
     else{const at=arrive,pp=pal;setTimeout(()=>impact(e,pp),at*(A.slow||1));}
   }
   return (calm?Math.min(hold,1400):hold)*(A.slow||1)+(fatal?FREEZE:0);
@@ -2049,6 +2133,47 @@ function drawStatus(now,dt){
     if(x.kind==="silence"){const y=q.y-22+Math.round(Math.sin(now/300));for(let i=-2;i<=2;i++){px(q.x+i,y+i,1,1,d.c[1]);px(q.x+i,y-i,1,1,d.c[1]);}glow(q.x,y,4,d.c[2],.1);}
   }
 }
+/* Beyond the tower: the roof is gone. A rift of open night runs across the sky, it widens with every floor climbed past the
+   eighth, and motes of the tower's ink drift up into it. Drawn on the virtual clock so it slows with the kill cam. */
+function drawBeyond(now){
+  const d=S.floor-FLOORS,k=Math.min(1,.45+d*.07),pulse=.5+.5*Math.sin(now/900),rnd=i=>{const v=Math.sin(i*91.7+d*13.1)*43758.5453;return v-Math.floor(v);};
+  let y=28+Math.round(rnd(1)*4);const pts=[];
+  for(let x=24;x<=96;x+=6){y=clamp(y+Math.round((rnd(x)-.5)*6),25,36);pts.push([x,y]);}
+  for(let i=0;i<pts.length-1;i++){const [x0,y0]=pts[i],[x1,y1]=pts[i+1],mid=Math.abs(i-(pts.length-1)/2)/((pts.length-1)/2),w=Math.max(0,Math.round((1-mid)*(1+3*k)));
+    for(let x=x0;x<x1;x++){const yy=Math.round(y0+(y1-y0)*(x-x0)/6);
+      if(w>0){px(x,yy-w,1,w*2+1,"#05020c");if((x+Math.floor(now/160))%9===0) px(x,yy,1,1,"#ffffff");}
+      px(x,yy-w-1,1,1,(x+Math.floor(now/120))%4?"#6a4fa3":"#c9a2ff");px(x,yy+w+1,1,1,(x+Math.floor(now/120))%5?"#463270":"#c9a2ff");}}
+  glow(60,30,18+Math.round(6*pulse*k),"#6a4fa3",.05+.05*k*pulse);
+  const n=6+Math.round(8*k);
+  for(let i=0;i<n;i++){const sp=2600+rnd(i+40)*2400,q=((now+rnd(i+70)*sp)%sp)/sp,x=10+rnd(i+20)*124+Math.sin(now/700+i)*3,yy=FLOOR-4-q*(FLOOR-16);
+    px(x,yy,1,q>.7?1:2,q>.85?"#ffffff":i%3?"#c9a2ff":"#8468bd");}
+}
+/* Today's omen hangs in the sky as a turning rune in the condition's colours. While the omen is still on the floor it burns bright
+   and drips light down to it; once a mage has used it, it smoulders. Each tag has its own glyph. */
+const OMEN_GLYPH={water:["..#..",".#.#.","#...#",".#.#.","..#.."],fire:["..#..",".###.","##.##",".###.","#####"],ice:["#.#.#",".###.","##.##",".###.","#.#.#"],
+  storm:["...##","..##.",".####",".##..","##..."],roots:["#.#.#","#.#.#",".###.","..#..",".###."],shadow:[".###.","##...","#....","##...",".###."],
+  wind:["####.","....#",".###.","#....",".####"],light:["#.#.#",".###.","#####",".###.","#.#.#"]};
+/* The omen answers: the rune flares and a shaft of its light falls to the mage who claimed it (title card, chime). */
+function omenCol(who){const R=rival(),p=who==="you"?YOU_PAL:p2(R)&&R.phase2?R.phase2.pal:R.pal;return ["#ffffff",p.r,p.H];}
+function omenFx(e){
+  const tg=TAGS[e.omen];if(!tg) return;
+  titleCard(tx("omenT",e.who==="you"),null,L(tg.name),omenCol(e.who)[1]);
+  A.omenFlare={t0:A.vt,who:e.who};A.flash=A.vt+160;if(!A.fin) SFX.omen();
+}
+function drawOmen(now){
+  const tag=omenOf(S.daily),c0=TAGS[tag]?TAGS[tag].c:null;if(!c0) return;
+  const c=S.omenBy?omenCol(S.omenBy):c0,fl=A.omenFlare,fp=fl?(now-fl.t0)/1400:1;
+  if(fp>=0&&fp<1){const q=chest(fl.who),cc=omenCol(fl.who),a=1-fp;glow(72,9,14+Math.round(10*a),cc[1],.2*a);
+    for(let y=14;y<q.y;y+=2){const t=(y-14)/(q.y-14),x=72+(q.x-72)*t;px(x-1,y,3,2,cc[y%6?1:0]);}
+    for(let i=0;i<10;i++){const an=i/10*6.283;px(q.x+Math.cos(an)*(4+fp*14),q.y+Math.sin(an)*(3+fp*8),1,1,cc[i%2]);}}
+  const live=S.field.some(f=>f.tag===tag&&!f.by),cx=72,cy=9,pul=.5+.5*Math.sin(now/520),k=live?1:.35,rows=OMEN_GLYPH[tag]||OMEN_GLYPH.light;
+  glow(cx,cy,8+Math.round(pul*3*k),c[1],(.05+.06*pul)*k);
+  for(let i=0;i<16;i++){const an=i/16*6.283+now/2400,r=7+(i%2);if((i+Math.floor(now/300))%4===0) continue;px(cx+Math.cos(an)*r,cy+Math.sin(an)*r*.8,1,1,c[i%2?2:1]);}
+  g.globalAlpha=.45+.55*k;
+  for(let y=0;y<5;y++) for(let x=0;x<5;x++) if(rows[y][x]==="#") px(cx-2+x,cy-2+y,1,1,live&&(x+y+Math.floor(now/180))%5===0?"#ffffff":c[live?0:2]);
+  g.globalAlpha=1;
+  if(live&&!calm&&!A.frozen&&Math.random()<.12) A.parts.push({x:cx+(Math.random()-.5)*4,y:cy+5,vx:(Math.random()-.5)*.006,vy:.035+Math.random()*.02,life:1500,max:1500,c:Math.random()<.6?c[1]:c[0]});
+}
 function frame(now){
   const dt=Math.min(60,now-last);last=now;A.n++;
   const rnow=now;A.rt+=dt;
@@ -2079,6 +2204,8 @@ function frame(now){
   g.drawImage(bg,sx,sy);
   if(A.theme!=="page"&&A.theme!=="sky") for(const s of A.stars){const v=Math.sin(now/600+s.ph);if(v>.2) px(s.x,s.y,1,1,v>.8?"#ffffff":"#8f9bb5");}
   for(const x0 of [7,135]){px(x0,19,2,3,"#ff8a3d");px(x0+(Math.floor(now/130)%2),17,1,2,"#ffd27a");glow(x0+1,19,5,"#ff8a3d",.06);}
+  if(S.floor>FLOORS&&S.phase!=="home") drawBeyond(now);
+  if(S.daily&&S.phase!=="home"&&S.phase!=="rest") drawOmen(now);
   let deep=0;
   if(S.phase==="duel") for(const w of ["you","foe"]){const c=S[w].cast;if(c) deep=Math.max(deep,Math.min(.5,.08+(S.t-c.start)/BEAT*.08));}
   A.dark+=(deep-A.dark)*.04;
@@ -2123,7 +2250,7 @@ function arrive(){
   A.decals=[];
   for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
   const d=document.createElement("div");d.className="arrive";
-  d.innerHTML=`<small class="px">${esc(tx("floorOf",S.floor,FLOORS))}</small><b>${esc(L(R.name))}</b><i>${esc(L(R.epithet))}</i>`;
+  d.innerHTML=`<small class="px">${esc(floorName(S.floor)+(S.daily?" · "+tx("dailyTag"):""))}</small><b>${esc(L(R.name))}</b><i>${esc(L(R.epithet))}</i>`;
   $("floats").appendChild(d);SFX.arrive(R.boss);
   setTimeout(()=>{d.remove();if(A.entry===tok){A.entry=null;say(line);renderStatic();}},ENTRY_MS);
 }
@@ -2224,7 +2351,7 @@ function composeRec(){
   const bw=200;for(const [w,x,col,al] of [["you",24,"#62bda7","left"],["foe",RW-24,"#de6a4f","right"]]){
     const m=S[w],bx=al==="left"?x:x-bw;rg.fillStyle="#243136";rg.fillRect(bx,30,bw,7);rg.fillStyle=col;rg.fillRect(al==="left"?bx:bx+bw*(1-clamp(m.hp/m.maxHp,0,1)),30,bw*clamp(m.hp/m.maxHp,0,1),7);
     recText(w==="you"?tx("you"):L(F.rival.name),x,15,13,"#ebe6d8",al);}
-  recText(tx("floorOf",F.floor,FLOORS).toUpperCase(),RW/2,16,11,"#cda64e","center");
+  recText(floorName(F.floor).toUpperCase(),RW/2,16,11,"#cda64e","center");
   if(F.caption) recText(F.caption.toUpperCase(),RW/2,RH-BAR/2,fitText(F.caption.toUpperCase(),RW-40,16),"#ebe6d8","center");
   if(F.i<0){const a=Math.min(1,(A.vt-F.t0)/400);rg.globalAlpha=a;recText(tx("finalMoves").toUpperCase(),RW/2,RH/2,fitText(tx("finalMoves").toUpperCase(),RW*.8,44),"#ffd27a","center");rg.globalAlpha=1;}
   recText(tx("title").toUpperCase(),RW-10,RH-10,9,"rgba(235,230,216,.55)","right");
@@ -2285,7 +2412,7 @@ function restView(){
   killOff();A.slow=1;T.paused=false;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";A.decals=[];A.restT0=A.vt;
   for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
   const d=document.createElement("div");d.className="arrive";
-  d.innerHTML=`<small class="px">${esc(tx("floorOf",S.floor,FLOORS))}</small><b>${esc(tx("shrineName"))}</b><i>${esc(tx("shrineSub"))}</i>`;
+  d.innerHTML=`<small class="px">${esc(floorName(S.floor))}</small><b>${esc(tx("shrineName"))}</b><i>${esc(tx("shrineSub"))}</i>`;
   $("floats").appendChild(d);setTimeout(()=>d.remove(),2000);
   restChime(1);localSave();window.scrollTo(0,0);renderStatic();
 }
@@ -2319,12 +2446,14 @@ document.addEventListener("click",e=>{
   if(act==="forgetkey"){try{localStorage.removeItem("ud.key");localStorage.removeItem("ud.code");}catch(x){}T.needCode=true;T.note=null;renderStatic();return;}
   if(A.fin) return;
   if(act==="run"){if(S.phase==="home"){startRun();beginDuelView();}}
+  else if(act==="daily"){if(S.phase==="home"){startRun(dayKey(Date.now()));beginDuelView();}}
   else if(act==="buy"){const u=UPGRADES.find(x=>x.id===v),l=lvl(v);if(u&&l<u.costs.length&&M.motes>=u.costs[l]){M.motes-=u.costs[l];M.up[v]=l+1;saveMeta();renderStatic();}}
   else if(act==="cast") castWritten();
   else if(act==="book"){if(live){const pk=(M.book||[])[+v];if(pk) fire(normalize(pk,true),false);}}
   else if(act==="sigil"){if(live){const sg=SIGILS.find(x=>x.id===v);if(sg) fire(normalize(sg,false),false);}}
   else if(act==="focus"){if(live){focus("you");T.note={msg:tx("gathered")};SFX.mend();floatText("you","+"+tx("manaF",has("quill")?25:12),"info");commit();}}
   else if(act==="cont"){if(canAct()&&S.you.cast){T.note=null;commit();}}
+  else if(act==="endless"){if(S.phase==="won"){enterEndless();saveMeta();SFX.arrive(true);const p=gem("you");spark(p.x,p.y,["#c9a2ff","#ffffff","#6a4fa3"],30,.07,1000,true);window.scrollTo(0,0);renderStatic();}}
   else if(act==="relic"){if(S.phase==="reward"){takeRelic(v);if(S.phase==="rest") restView();else beginDuelView();}}
   else if(act==="rest"){if(S.phase==="rest"){const c={heal:["#eaffb0","#7ad86a"],relic:["#fff1a8","#cda64e"],motes:["#c9fff2","#a8e6ff"]}[v]||["#ffffff"],p=gem("you");
     takeRest(v);beginDuelView();spark(p.x,p.y,c,26,.06,900,true);restChime(v==="relic"?1.5:v==="motes"?2:1);}}
@@ -2409,26 +2538,42 @@ function renderEnd(){
     return;
   }
   if(S.phase==="reward"){
-    const next=S.floor+1>=FLOORS?BOSS:RIVALS.find(r=>r.id===S.ladder[S.floor]);
-    $("pEnd").innerHTML=`<p class="result">${esc(tx("yields",L(R.name)))}</p>${finaleRow()}<p class="note">${esc(tx("rewardNote",8+4*S.floor,S.floor+1,L(next.name)))}</p>
+    const next=rivalAt(S.floor+1),gone=!S.choices.length;
+    $("pEnd").innerHTML=`<p class="result">${esc(tx("yields",L(R.name)))}</p>${finaleRow()}<p class="note">${esc(tx("rewardNote",8+4*Math.min(S.floor,FLOORS*2),S.floor+1,L(next.name)))}${gone?" "+esc(tx("noRelics")):""}</p>${gone?`<div class="row"><button class="btn wide" data-act="relic" data-v="">${esc(tx("climbOn"))}</button></div>`:""}
       <div class="cards">${S.choices.map(id=>{const r=RELICS.find(x=>x.id===id);return r?`<button class="card" data-act="relic" data-v="${id}"><div><strong>${esc(L(r.name))}</strong><span>${esc(L(r.text))}</span></div></button>`:"";}).join("")}</div>`;
   }else if(S.phase==="dead"||S.phase==="won"){
     $("pEnd").innerHTML=`<p class="result">${S.phase==="won"?esc(tx("wonText")):esc(tx("lostText",S.floor,L(R.name)))}</p>${finaleRow()}
-      <p class="note">${esc(tx("earned",S.earned))}</p><div class="row"><button class="btn wide" data-act="home">${esc(tx("toSanctum"))}</button></div>`;
+      <p class="note">${S.phase==="won"?esc(tx("endlessNote"))+" ":""}${S.endless?esc(tx("deepRec",M.deep||0)):""}${S.daily&&M.daily&&M.daily.d===S.daily?esc(tx("dailyRec",M.daily.best)):""}${esc(tx("earned",S.earned))}</p>${S.phase==="won"?`<div class="row"><button class="btn wide" data-act="endless">${esc(tx("endlessGo"))}</button></div>`:""}<div class="row"><button class="btn ${S.phase==="won"?"ghost":""} wide" data-act="home">${esc(tx("toSanctum"))}</button></div>`;
   }
 }
 function renderHome(){
-  $("homeNote").textContent=(M.best?tx("best",M.best,FLOORS):"")+(M.wins?tx("towers",M.wins):"")+((M.book||[]).length?tx("holds",M.book.length):"")+(T.cloud?tx("savedCloud"):tx("savedDevice"));
+  $("homeNote").textContent=(M.best?tx("best",Math.min(M.best,FLOORS),FLOORS):"")+(M.wins?tx("towers",M.wins):"")+(M.deep>FLOORS?tx("deepRec",M.deep):"")+((M.book||[]).length?tx("holds",M.book.length):"")+(T.cloud?tx("savedCloud"):tx("savedDevice"));
+  {const day=dayKey(Date.now()),om=omenOf(day);$("dailyNote").textContent=tx("dailyNote",L(TAGS[om].name),M.daily&&M.daily.d===day?M.daily.best:null);}
   $("shop").innerHTML=UPGRADES.map(u=>{const l=lvl(u.id),max=l>=u.costs.length,c=max?0:u.costs[l];
     return `<button class="card ${max?"owned":""}" data-act="buy" data-v="${u.id}" ${max||M.motes<c?"disabled":""}><div><strong>${esc(L(u.name))}${u.costs.length>1?" "+l+"/"+u.costs.length:l?" ✓":""}</strong><span>${esc(L(u.text))}</span></div><em class="px">${max?esc(tx("done")):esc(tx("motes",c))}</em></button>`;}).join("");
+  renderCodex();
   $("changelog").innerHTML=CHANGELOG.map(c=>`<p><b>${esc(c.d)}</b> ${esc(LANG==="ru"&&c.ru?c.ru:c.t)}</p>`).join("");
+}
+/* The reaction codex in the sanctum: every pair in REACTIONS plus Convergence. Known ones show their name, the two conditions and a pixel
+   emblem in their colours; the rest are grey silhouettes. */
+function renderCodex(){
+  const list=Object.keys(REACTIONS).map(k=>({name:REACTIONS[k].name,tags:k.split("+")})).concat([{name:"Convergence",tags:[]}]),known=Array.isArray(M.codex)?M.codex:[];
+  const n=list.filter(r=>known.includes(r.name)).length,key=known.join("|")+LANG;
+  $("codexLabel").textContent=tx("codexLabel",n,list.length);
+  if($("codex").dataset.k===key) return;$("codex").dataset.k=key;
+  $("codex").innerHTML=list.map((r,i)=>{const k=known.includes(r.name);return `<div class="cx${k?"":" unk"}"><canvas width="20" height="10" data-i="${i}"></canvas><b>${esc(k?L(r.name):tx("unknownRx"))}</b>${k&&r.tags.length?`<span>${esc(r.tags.map(t=>L(TAGS[t].name)).join(" + "))}</span>`:""}</div>`;}).join("");
+  for(const c of $("codex").querySelectorAll("canvas")){
+    const r=list[+c.dataset.i],k=known.includes(r.name),x=c.getContext("2d"),cols=r.tags.length?r.tags.map(t=>TAGS[t].c):[["#ffffff","#c9a2ff","#7a4fd6"],["#fff1b8","#ff8a3d","#c7372f"]];
+    [[6,cols[0]],[13,cols[1]]].forEach(([cx,cc],j)=>{for(let y=-4;y<=4;y++) for(let xx=-4;xx<=4;xx++){const d=xx*xx+y*y;if(d>18) continue;if(j===1&&(cx+xx-6)*(cx+xx-6)+y*y<=18&&(xx+y)%2) continue;
+      x.fillStyle=k?(d>12?cc[2]:d>4?cc[1]:cc[0]):(d>12?"#1a2428":"#2a3a40");x.fillRect(cx+xx,5+y,1,1);}});
+  }
 }
 function renderStatic(){
   const home=S.phase==="home",duel=S.phase==="duel";
   $("chipSnd").textContent=SND.on?tx("soundOn"):tx("soundOff");
   if(A.fin){$("actbar").hidden=true;$("pEnd").hidden=true;$("desk").hidden=true;return;}
   $("home").hidden=!home;$("duel").hidden=home;$("hud").hidden=!duel;$("actbar").hidden=!duel;$("desk").hidden=!duel;
-  $("chipFloor").hidden=home;$("chipFloor").innerHTML=tx("floorChip",S.floor,FLOORS)+(duel?tx("roundChip",S.round):"");
+  $("chipFloor").hidden=home;$("chipFloor").innerHTML=(S.floor>FLOORS?tx("deepChip",S.floor):tx("floorChip",S.floor,FLOORS))+(duel?tx("roundChip",S.round):"");
   $("chipMotes").innerHTML=tx("motesChip",M.motes);$("chipMotes").hidden=duel;
   const needRef=WEB&&(!canReferee()||T.needCode);
   $("codeHome").hidden=!needRef;$("codeDesk").hidden=!(needRef&&duel);
