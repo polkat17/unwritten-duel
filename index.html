@@ -152,6 +152,10 @@ textarea:disabled{opacity:.5}
 .spellchip b{font:400 15.5px/1.2 var(--display);letter-spacing:.03em;overflow-wrap:anywhere}
 .spellchip span{font-size:12.5px;color:var(--dust);font-variant-numeric:tabular-nums}
 .spellchip:disabled{opacity:.4;cursor:default}
+.spellchip.sig{border-color:var(--brass);box-shadow:inset 0 0 0 1px rgba(255,210,122,.35),0 0 6px rgba(255,210,122,.25)}
+.spellchip.sig b{color:#ffd27a}
+.spellchip.sig b::before{content:"\2726 ";color:var(--brass)}
+.killcap.sig{color:#fff1a8;letter-spacing:.06em}
 .sigils{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .sigils button{background:transparent;border:1px dashed var(--line);border-radius:2px;padding:7px 4px;cursor:pointer;color:var(--dust);display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
 .sigils button b{font:400 14px var(--display);color:var(--chalk)}
@@ -314,6 +318,10 @@ details .body b{color:var(--chalk);font-weight:500}
    - Today's climb (S.daily, startRun(day), rngFor, offer, omenOf, drawOmen): a UTC-dated climb seeded so everyone meets the same ladder,
      relic offers and omen (a condition on the floor at the start of every duel). M.daily = {d, best}. Ordinary climbs leave S.daily "".
      The first mage to use the omen claims it (cast event field omen, S.omenBy, omenFx); the rune then keeps their colour.
+   - Signature spells (signatureOf): a grimoire spell that ends a duel counts it in its book entry (field sig); the chip gets a gold edge and,
+     from its second finishing blow on, the kill cam gives it its own title card. inscribe() keeps sig when a spell is rewritten.
+   - Answering theme (MUS.answer): when the player exploits a rival's condition, the rival's motif plays mirrored on the player's horn.
+     Signature echoes (sigEcho, drawLegend): casting a sig spell adds a gold ghost motion (fx field ghost = alpha) and a gold star in A.legend.
    - Reaction codex (M.codex, renderCodex): names of reactions the player has caused; the sanctum shows the rest as silhouettes.
    - Drop-in art: PNG sheets published as art/<id>.png replace the drawn
      sprites (see ART below for the frame layout). Never delete art files.
@@ -336,15 +344,18 @@ details .body b{color:var(--chalk);font-weight:500}
      changes (up to roughly 400 changed lines). After that date, one small
      change per run.
    BACKLOG (take from the top, remove when done, add new ideas at the end):
-     1. Signature spells: a grimoire spell that has landed a finishing blow gets a gold edge on its chip and its own title card in the kill cam the next time it ends a duel.
-     2. Ink wounds: in the Unwritten's second phase, every condition the player creates is drawn as handwriting across the ruled sky, and the boss can "cross out" one each round unless the player's spell is inspired (4+).
-     3. Weather duels: when both mages have a condition of their own on the field, the hall's sky visibly splits between their colours, and a grand combination that uses one condition from each side lands as a "Stolen Sky" with its own title card.
-     4. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
-     5. Echoes of the deep: beyond the tower, each rival returns carrying one spell from the player's own grimoire (rewritten in their element), so the deeper floors answer the player's favourite combinations with their own.
-     6. Spell scars: a lethal cataclysm or grand combination leaves a lasting pixel scar on the arena floor (scorch, frost crack, flood line, rooted earth) for the rest of the duel, so the hall remembers the biggest magic cast in it.
-     7. Answering themes: when the player exploits a condition a rival made, the score briefly quotes that rival's leitmotif inverted (motifOf mirrored) on the player's horn, so stealing their magic is heard as well as seen.
+     1. Ink wounds: in the Unwritten's second phase, every condition the player creates is drawn as handwriting across the ruled sky, and the boss can "cross out" one each round unless the player's spell is inspired (4+).
+     2. Weather duels: when both mages have a condition of their own on the field, the hall's sky visibly splits between their colours, and a grand combination that uses one condition from each side lands as a "Stolen Sky" with its own title card.
+     3. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
+     4. Echoes of the deep: beyond the tower, each rival returns carrying one spell from the player's own grimoire (rewritten in their element), so the deeper floors answer the player's favourite combinations with their own.
+     5. Spell scars: a lethal cataclysm or grand combination leaves a lasting pixel scar on the arena floor (scorch, frost crack, flood line, rooted earth) for the rest of the duel, so the hall remembers the biggest magic cast in it.
+     6. Rival's grudge: a rival whose condition the player has turned against them twice in one duel stops creating that condition and switches to its second element for the rest of the duel, with a line from SAY, so stealing their magic changes how they fight.
+     7. Rival dread: when the player's legend over their head reaches five gold stars (A.legend), the next rival's entrance line acknowledges it (a fifth SAY line per rival, EN+RU), so the tower hears of the player's signature magic.
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-23",t:"Signature echoes: a spell that has already ended a duel is now shadowed by a gold after-image of itself with a soft chime, and every casting hangs another gold star over your head for the rest of the duel.",ru:"Отзвук коронных заклинаний: заклинание, уже заканчивавшее дуэль, теперь сопровождает его золотой отблеск с тихим перезвоном, а каждое произнесение зажигает над вашей головой ещё одну золотую звезду до конца дуэли."},
+  {d:"2026-11-23",t:"When you turn a rival's own condition against them, the music now answers with their theme turned upside down on your horn, so stealing their magic is heard as well as seen.",ru:"Когда вы обращаете условие соперника против него самого, музыка теперь отвечает его же темой, перевёрнутой вверх ногами, на вашем роге, так что кражу его магии слышно, а не только видно."},
+  {d:"2026-11-22",t:"Signature spells: a grimoire spell that ends a duel now wears a gold edge and counts its finishing blows, and every time it ends another duel the kill cam announces it by name.",ru:"Коронные заклинания: заклинание из гримуара, которое заканчивает дуэль, теперь получает золотую кайму и считает свои добивающие удары, а каждый раз, когда оно заканчивает ещё одну дуэль, кадр добивания называет его по имени."},
   {d:"2026-11-21",t:"Every rival now has a four-note theme of their own that the music sings while they gather a spell, and a grand combination of yours is answered by your own triumphant theme.",ru:"У каждого соперника теперь своя тема из четырёх нот: музыка поёт её, пока он собирает заклинание, а на вашу великую комбинацию отвечает ваша собственная победная тема."},
   {d:"2026-11-21",t:"On today's climb, the mage who uses the omen first now claims it: a shaft of light falls from the rune to them with a title card and a chime, and the rune keeps their colour for the rest of the duel; the update notes are now in Russian too.",ru:"В восхождении дня маг, первым использовавший знамение, теперь забирает его себе: луч света падает от руны к нему, появляется титр и звучит перезвон, а руна до конца дуэли горит его цветом; заметки об обновлениях теперь тоже на русском."},
   {d:"2026-11-20",t:"Today's climb: once a day the tower is the same for everyone, with the same rivals, the same relics on offer and one omen, a condition that glows as a rune in the sky and already lies on the floor when every duel begins; and the sanctum now keeps a codex of every reaction you have discovered.",ru:"Восхождение дня: раз в день башня одна на всех — те же соперники, те же реликвии в награду и одно знамение: условие, которое горит руной в небе и уже лежит на поле в начале каждой дуэли; а в святилище теперь есть кодекс всех открытых вами реакций."},
@@ -1029,7 +1040,7 @@ Object.assign(TX.en,{
   behind:(n,a)=>"Behind "+n+" ("+a+")",clear:"The battlefield is clear.",
   roundUnfolds:r=>"Round "+r+" unfolds…",weighing:"Weighing your spell…",keepChan:left=>"Keep channelling · "+(left===1?"lands this round":left+" rounds to go"),cast:"Cast",
   focusBtn:n=>"Focus +"+n,watchRound:"Watch the round play out.",holdOn:n=>"You are channelling "+n+". Hold on, or a hard hit may break it.",chosen:"Your rival has already chosen. Both spells begin together.",
-  chipPower:(p,m)=>"Power "+p+" · "+m+" mana",chipUses:s=>" · uses "+s,chipMakes:s=>" · makes "+s,
+  chipPower:(p,m)=>"Power "+p+" · "+m+" mana",chipSig:n=>" · ended "+n+(n===1?" duel":" duels"),sigT:"Signature spell",sigSub:n=>"Its "+n+(n===1?"st":n===2?"nd":n===3?"rd":"th")+" finishing blow",chipUses:s=>" · uses "+s,chipMakes:s=>" · makes "+s,
   sigDmg:n=>n+" damage",sigWard:n=>"ward "+n,sigBreak:"breaks casting",sigMana:n=>" · "+n+" mana",
   restTitle:"Halfway up the tower, a moonlit altar. The next rival can wait.",shrineName:"The Moonlit Altar",shrineSub:"Rest a moment",
   restHeal:"Rest by the flame",restHealText:(h,m)=>"Recover all your life: "+h+" → "+m+".",restRelic:"Take the offering",restMotes:"Meditate",
@@ -1104,7 +1115,7 @@ Object.assign(TX.ru,{
   behind:(n,a)=>"Под щитом «"+n+"» ("+a+")",clear:"Поле боя чисто.",
   roundUnfolds:r=>"Раунд "+r+" разыгрывается…",weighing:"Судья оценивает…",keepChan:left=>"Продолжать подготовку · "+(left===1?"сработает сейчас":"ещё "+left+(left<5?" раунда":" раундов")),cast:"Колдовать",
   focusBtn:n=>"Фокус +"+n,watchRound:"Смотрите, как разыгрывается раунд.",holdOn:n=>"Вы готовите «"+n+"». Держитесь — сильный удар может сорвать его.",chosen:"Соперник уже сделал выбор. Оба заклинания начнутся вместе.",
-  chipPower:(p,m)=>"Сила "+p+" · "+m+" маны",chipUses:s=>" · использует "+s,chipMakes:s=>" · создаёт "+s,
+  chipPower:(p,m)=>"Сила "+p+" · "+m+" маны",chipSig:n=>" · добиваний: "+n,sigT:"Коронное заклинание",sigSub:n=>"Добивающий удар № "+n,chipUses:s=>" · использует "+s,chipMakes:s=>" · создаёт "+s,
   sigDmg:n=>n+" урона",sigWard:n=>"щит "+n,sigBreak:"срывает колдовство",sigMana:n=>" · "+n+" маны",
   restTitle:"На полпути вверх по башне — алтарь под луной. Следующий соперник подождёт.",shrineName:"Лунный алтарь",shrineSub:"Передохните",
   restHeal:"Отдохнуть у огня",restHealText:(h,m)=>"Восстановить всю жизнь: "+h+" → "+m+".",restRelic:"Принять дар",restMotes:"Медитировать",
@@ -1283,6 +1294,7 @@ async function castWritten(){
 }
 function inscribe(pk){
   const keep={};for(const k of ["name","el","shape","form","motion","palette","count","power","damage","absorb","heal","drain","breaks","creates","exploits","impact","text","written","insp","lethal","lasting"]) keep[k]=pk[k];
+  const old=(M.book||[]).find(b=>b.name===pk.name);if(old&&old.sig) keep.sig=old.sig;
   M.book=[keep].concat((M.book||[]).filter(b=>b.name!==pk.name)).slice(0,8);
   saveMeta();T.bookKey="";
 }
@@ -1455,6 +1467,13 @@ MUS.swell=function(k){
 const MY_MOTIF=[0,4,2,7];
 function motifOf(id){let h=7;for(const ch of String(id||"")) h=(Math.imul(h,31)+ch.charCodeAt(0))>>>0;const m=[0];for(let i=0;i<3;i++){h=(Math.imul(h,1103515245)+12345)>>>0;m.push(m[i]+[-3,-2,-1,1,2,3,4,5][(h>>>16)&7]);}return m;}
 function mMotif(th,m,t,L,oct,type,vol,cut){m.forEach((d,i)=>mNote(mDeg(th,d,oct),t+i*L*(i===3?2.2:2),i===3?L*6:L*2.4,type,vol,cut,.03));}
+/* answering theme: when the player turns a rival's own condition against them, the rival's motif returns mirrored
+   (every interval inverted) on the player's horn, a beat after the combination's swell. */
+MUS.answer=function(){
+  const x=SND.ctx,r=rival();if(!x||!MUS.bus||!SND.on||!r) return;
+  const th=A.theme||"court",t=x.currentTime+.75,root=PROG[th][Math.floor(MUS.step/16)%4],L=MUS.stepS*.9,m=motifOf(r.id).map(d=>root-d);
+  try{mMotif(th,m,t,L,0,"sawtooth",.06,1800);mMotif(th,m.map(d=>d+7),t+.02,L,0,"triangle",.03,3600);}catch(e){}
+};
 function musTarget(){
   if(S.phase==="home") return .05;
   if(S.phase!=="duel") return .02;
@@ -1540,7 +1559,7 @@ function loadArt(id){if(id in ART) return;ART[id]=null;try{const im=new Image();
 const YOU_PAL={h:"#2f7f73",H:"#1d554d",r:"#62bda7",R:"#3f8f7e",t:"#ebe6d8",s:"#e6c3a0"};
 const POS={you:{x:18,y:FLOOR-SH,flip:false},foe:{x:102,y:FLOOR-SH,flip:true}};
 function mid(who){const p=POS[who];return p.x+(p.flip?13:10);}
-const A={vt:0,tearUntil:0,slow:1,fin:null,theme:"",parts:[],fx:[],pose:{you:{},foe:{}},shake:0,mag:1,flash:0,dark:0,decals:[],fade:{you:0,foe:0},lift:{you:0,foe:0},stars:[],n:0,scale:1,entry:null,bolts:[],rt:0,freeze:null,kill:null,frozen:false};
+const A={vt:0,tearUntil:0,slow:1,fin:null,theme:"",parts:[],fx:[],pose:{you:{},foe:{}},shake:0,mag:1,flash:0,dark:0,decals:[],legend:[],fade:{you:0,foe:0},lift:{you:0,foe:0},stars:[],n:0,scale:1,entry:null,bolts:[],rt:0,freeze:null,kill:null,frozen:false};
 for(let i=0;i<34;i++) A.stars.push({x:(i*53+17)%W,y:(i*29+7)%54,ph:i*1.7});
 function gem(who,casting){const p=POS[who];return {x:p.x+(p.flip?3:20),y:p.y+(casting?2:7)-Math.round(A.lift[who])};}
 function chest(who){return {x:mid(who),y:POS[who].y+20-Math.round(A.lift[who])};}
@@ -1630,12 +1649,15 @@ function launch(e){
       SFX.react(rx.fx);
     }else titleCard(tx("combo",e.combo>=2),"combo",names+(e.stolen?" · "+tx("stolenSub",e.who==="you"):""));
     if(e.stolen&&e.who==="foe"&&!A.fin) setTimeout(()=>say(L((SAY[rival().id]||[])[3])),CHARGE);
+    if(e.stolen&&e.who==="you") MUS.answer();
     SFX.combo(e.combo);A.flash=now+(e.combo>=2?240:120);
     for(const t of e.tags) if(TAGS[t]) for(let x=8;x<W;x+=12) spark(x,FLOOR+2,TAGS[t].c,2,.06,500);
   }else if(e.insp&&e.name) titleCard(e.name,null,tx("bInsp",e.insp)+(e.lethal?" · "+tx("lethalT"):""),c[1]);
   else if(tr>=2&&e.name) titleCard(e.who==="you"?e.name:L(e.name),null,null,c[1]);
   A.fx.push({type:"charge",t0:now,dur:CHARGE,who:e.who,c,s:big?3:1+Math.min(2,tier(e.power))});
   A.fx.push({type:"motion",m,t0:now+CHARGE,dur,a:gem(e.who,true),b:self?chest(e.who):chest(o),c,s:big?4:1+tier(e.power),n:e.count||0,seed:Math.random()*1000,who:e.who,dir:e.who==="you"?1:-1});
+  const sg=e.who==="you"&&e.name?(M.book||[]).find(x=>x.name===e.name&&x.sig):null;
+  if(sg) sigEcho(e,m,dur,big?4:1+tier(e.power),self?chest("you"):chest(o),now);
   if(e.lethal) A.fx.push({type:"cata",t0:now+CHARGE,dur:dur+500,a:gem(e.who,true),b:chest(o),c,el:e.el});
   if(big) A.dim={from:now,until:now+CHARGE+dur+300};
   setTimeout(()=>{
@@ -1673,18 +1695,48 @@ function impact(e,c){
 }
 const FREEZE=calm?250:750;
 /* The batch that ends the duel: slow motion, a letterbox and a caption; impact() then holds the frame. */
-function killCam(c){
+function killCam(c,sig){
   if(!calm) A.slow=2.2;
   A.kill={r0:A.rt};cv.parentNode.classList.add("kill");
   for(const o of document.querySelectorAll(".killcap")) o.remove();
   const d=document.createElement("div");d.className="killcap px";
   d.textContent=tx("finishingBlow")+(c&&c.name?" · "+(c.who==="you"?c.name:L(c.name)):"");
+  if(sig){d.className="killcap px sig";d.textContent="\u2726 "+tx("sigT")+" · "+c.name+" \u2726";titleCard(c.name,"combo",tx("sigSub",sig));tone(523,1046,.7,"triangle",.07,.12);}
   $("floats").appendChild(d);
+}
+/* Signature spells: a grimoire spell that ends a duel counts it (book entry field sig); from its second finishing blow on, the kill cam names it. */
+function signatureOf(ev,c){
+  const h=ev.find(e=>e.t==="hit"&&e.fatal);
+  if(!c||!h||c.who!=="you"||h.who!=="foe"||h.dot) return 0;
+  const b=(M.book||[]).find(x=>x.name===c.name);if(!b) return 0;
+  const was=b.sig||0;b.sig=was+1;saveMeta();T.bookKey="";
+  return was?b.sig:0;
+}
+/* Signature echoes: a spell that has ended duels is shadowed by a faint gold after-image of its own motion, and each casting
+   hangs one more gold star over the caster for the rest of the duel (A.legend, drawLegend), so a favourite spell looks like a legend. */
+const GOLD=["#fff6c8","#ffd27a","#8a6a2a"];
+function sigEcho(e,m,dur,s,b,now){
+  const d=calm?0:160;
+  A.fx.push({type:"motion",m,t0:now+CHARGE+d,dur,a:gem("you",true),b,c:GOLD,s:Math.max(1,s-1),n:e.count||0,seed:Math.random()*1000,who:"you",dir:1,ghost:.42});
+  if(A.legend.length<8) A.legend.push({t0:now+CHARGE+dur});
+  tone(784,1568,.6,"triangle",.035,(CHARGE+d)*(A.slow||1)/1000);
+}
+function drawLegend(now){
+  const n=A.legend.length;if(!n) return;
+  const cx=mid("you"),y0=POS.you.y-9-Math.round(A.lift.you);
+  for(let i=0;i<n;i++){
+    const L0=A.legend[i],k=clamp((now-L0.t0)/500,0,1);if(k<=0) continue;
+    const x=Math.round(cx+(i-(n-1)/2)*6),y=y0-Math.round(Math.abs(i-(n-1)/2)*1.5)+Math.round(Math.sin(now/600+i)*1),tw=.6+.4*Math.sin(now/240+i*1.7);
+    g.globalAlpha=k*(.55+.35*tw);
+    px(x,y-2,1,5,GOLD[1]);px(x-2,y,5,1,GOLD[1]);px(x,y,1,1,GOLD[0]);
+    if(k<1){g.globalAlpha=1-k;px(x-3,y-3,7,7,GOLD[0]);}
+    g.globalAlpha=1;glow(x,y,3,GOLD[1],.05*tw);
+  }
 }
 function killOff(){A.kill=null;A.freeze=null;cv.parentNode.classList.remove("kill");for(const o of document.querySelectorAll(".killcap")) o.remove();}
 function play(ev){
   const fatal=ev.some(e=>e.t==="hit"&&e.fatal);
-  if(fatal&&!A.fin) killCam(ev.find(e=>e.t==="cast"));
+  if(fatal&&!A.fin){const c=ev.find(e=>e.t==="cast"&&e.who==="you")||ev.find(e=>e.t==="cast");killCam(c,signatureOf(ev,c));}
   if(ev[0]&&ev[0].t==="phase") return phaseFx(ev)*(A.slow||1);
   if(ev[0]&&ev[0].t==="tick"){for(const e of ev.slice(1)) impact(e,e.dot?STATUS[e.dot].c:EL.void.c);return 900*(A.slow||1)+(fatal?FREEZE:0);}
   let arrive=0,pal=EL.void.c,hold=0;
@@ -1726,7 +1778,7 @@ function drawCharge(f,p,now){
   for(let i=0;i<8+f.s*3;i++){const an=i*.785+now/90;px(q.x+Math.cos(an)*r,q.y+Math.sin(an)*r,1,1,c[i%3]);}
 }
 function drawMotion(f,q,now){
-  const c=f.c,a=f.a,b=f.b,s=f.s,dir=b.x>=a.x?1:-1,rnd=k=>{const v=Math.sin(f.seed+k*12.9898)*43758.5453;return v-Math.floor(v);};
+  const ga=f.ghost||1,c=f.c,a=f.a,b=f.b,s=f.s,dir=b.x>=a.x?1:-1,rnd=k=>{const v=Math.sin(f.seed+k*12.9898)*43758.5453;return v-Math.floor(v);};
   const at=t=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
   switch(f.m){
   case "bolt":{
@@ -1743,7 +1795,7 @@ function drawMotion(f,q,now){
   case "beam":{
     if(q<.35){const k=q/.35;orbAt(a.x,a.y,1+Math.round(k*(1+s)),c);spark(a.x,a.y,c,1,.05,200);}
     else{const k=Math.min(1,(q-.35)/.15),end={x:a.x+(b.x-a.x)*k,y:a.y+(b.y-a.y)*k},th=s+(Math.floor(now/50)%2),fade=q>.85?(1-q)/.15:1;
-      g.globalAlpha=fade;for(let w=-th;w<=th;w++) lineTo({x:a.x,y:a.y+w*.5},{x:end.x,y:end.y+w*.5},null,Math.abs(w)<th-1?c[0]:c[1],c[2]);g.globalAlpha=1;
+      g.globalAlpha=fade*ga;for(let w=-th;w<=th;w++) lineTo({x:a.x,y:a.y+w*.5},{x:end.x,y:end.y+w*.5},null,Math.abs(w)<th-1?c[0]:c[1],c[2]);g.globalAlpha=ga;
       glow(end.x,end.y,8+s*2,c[1],.12);if(k>=1) spark(b.x,b.y,c,2,.1,260);}
     break;}
   case "lightning":{
@@ -1775,17 +1827,17 @@ function drawMotion(f,q,now){
   case "pillar":{
     const grow=Math.sin(Math.min(1,q/.3)*1.5708),fade=q>.7?Math.max(0,(1-q)/.3):1,h=(34+s*10)*grow,wd=3+s*2;
     if(q<.15){for(let i=0;i<8;i++) px(b.x-wd+rnd(i+Math.floor(now/60))*wd*2,FLOOR-1,1,1,c[1]);}
-    g.globalAlpha=fade;
+    g.globalAlpha=fade*ga;
     for(let y=0;y<h;y++){const t=y/Math.max(1,h),ww=wd*(1-t*.4)+Math.sin(y*.5+now/50);px(b.x-ww/2,FLOOR-y,ww,1,t<.3?c[0]:t<.7?c[1]:c[2]);}
-    g.globalAlpha=1;glow(b.x,FLOOR-h/2,10+s*2,c[1],.08*fade);
+    g.globalAlpha=ga;glow(b.x,FLOOR-h/2,10+s*2,c[1],.08*fade);
     if(Math.random()<.7*fade) A.parts.push({x:b.x+(Math.random()-.5)*wd,y:FLOOR-h,vx:(Math.random()-.5)*.03,vy:-.05,life:500,max:500,c:c[1]});
     break;}
   case "spikes":{
     const N=7+s,fade=q>.8?Math.max(0,(1-q)/.2):1;
-    g.globalAlpha=fade;
+    g.globalAlpha=fade*ga;
     for(let k=0;k<N;k++){const t0=k/N*.55;if(q<t0) continue;const x=a.x+(b.x-a.x)*((k+1)/N),grow=Math.min(1,(q-t0)/.12),h=(4+s*2+k*(1+s*.6))*grow,lean=dir*.15;
       for(let y=0;y<h;y++){const ww=Math.max(1,(1-y/h)*(2+s*.7));px(x+lean*y-ww/2,FLOOR-y,ww,1,y>h-2?c[0]:y<h*.4?c[2]:c[1]);}}
-    g.globalAlpha=1;break;}
+    g.globalAlpha=ga;break;}
   case "vortex":{
     const n=24+s*8,r0=(1-q*.7)*(12+s*3);
     for(let i=0;i<n;i++){const an=i*.55+now/70,rr=r0*(1-i/n*.6),y=b.y+8-i*(18+s*3)/n*Math.min(1,q*2);px(b.x+Math.cos(an)*rr,y+Math.sin(an)*rr*.3,1,1,c[i%3]);}
@@ -2085,7 +2137,7 @@ function drawFx(f,now){
   if(now<f.t0) return true;
   const p=(now-f.t0)/f.dur;if(p>=1) return false;
   const c=f.c,L=(a,b)=>a+(b-a)*p;
-  if(f.type==="motion") drawMotion(f,p,now);
+  if(f.type==="motion"){g.globalAlpha=f.ghost||1;drawMotion(f,p,now);g.globalAlpha=1;}
   else if(f.type==="charge") drawCharge(f,p,now);
   else if(f.type==="cata") drawCata(f,p,now);
   else if(f.type==="react") drawReaction(f,p,now);
@@ -2212,6 +2264,7 @@ function frame(now){
   if(A.dark>.01){g.fillStyle="rgba(3,3,10,"+A.dark.toFixed(3)+")";g.fillRect(0,0,W,H);}
   for(const d of A.decals){px(d.x,FLOOR+3+d.o,3,1,"rgba(0,0,0,.55)");px(d.x+1,FLOOR+2+d.o,1,1,d.c);}
   if(S.phase!=="home") drawField(now);
+  if(S.phase==="duel") drawLegend(now);
   if(S.phase==="home"){
     drawMage("you",now);
     if(!calm&&now>demoAt){demoAt=now+3000;const els=["ember","tide","thorn","void"],el=els[Math.floor(Math.random()*4)],ms=MOTIONS.filter(m=>!SELF_MOTION.includes(m)),m=ms[Math.floor(Math.random()*ms.length)],tg={x:112,y:FLOOR-12};
@@ -2247,7 +2300,7 @@ const SAY={
 };
 function arrive(){
   const R=rival(),line=L((SAY[R.id]||[])[0]),tok=A.entry={t0:A.vt};
-  A.decals=[];
+  A.decals=[];A.legend=[];
   for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
   const d=document.createElement("div");d.className="arrive";
   d.innerHTML=`<small class="px">${esc(floorName(S.floor)+(S.daily?" · "+tx("dailyTag"):""))}</small><b>${esc(L(R.name))}</b><i>${esc(L(R.epithet))}</i>`;
@@ -2409,7 +2462,7 @@ function duelOver(){
 }
 /* The shrine halfway up: the hall dims to the sanctum's moonlight, the rival's place holds an altar (drawShrine). */
 function restView(){
-  killOff();A.slow=1;T.paused=false;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";A.decals=[];A.restT0=A.vt;
+  killOff();A.slow=1;T.paused=false;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";A.decals=[];A.legend=[];A.restT0=A.vt;
   for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
   const d=document.createElement("div");d.className="arrive";
   d.innerHTML=`<small class="px">${esc(floorName(S.floor))}</small><b>${esc(tx("shrineName"))}</b><i>${esc(tx("shrineSub"))}</i>`;
@@ -2514,9 +2567,9 @@ function renderLive(force){
   const nt=$("castNote"),msg=T.resolving?tx("watchRound"):chan?tx(chan.lethal?"holdLethal":"holdOn",chan.written?chan.name:L(chan.name)):T.note?T.note.msg:(T.sample?tx("chosen"):"");
   if(nt.textContent!==msg) nt.textContent=msg;
   nt.className="note"+(T.note&&T.note.warn&&!T.resolving&&!chan?" warn":"");
-  const book=M.book||[],bk=book.map(b=>b.name+manaFor(Object.assign({},b,{written:true}),"you")).join("|");
+  const book=M.book||[],bk=book.map(b=>b.name+(b.sig||0)+manaFor(Object.assign({},b,{written:true}),"you")).join("|");
   if(bk!==T.bookKey){T.bookKey=bk;
-    $("book").innerHTML=book.map((b,i)=>`<button class="spellchip" data-act="book" data-v="${i}" style="--elc:${b.palette?b.palette[1]:EL[b.el]?EL[b.el].c[1]:"#c9a2ff"}"><b>${esc(b.name)}</b><span>${tx("chipPower",b.power,manaFor(Object.assign({},b,{written:true}),"you"))}${b.exploits&&b.exploits.length?tx("chipUses",esc(b.exploits.map(t=>TAGS[t]?L(TAGS[t].name):t).join("+"))):""}${b.creates&&b.creates.length?tx("chipMakes",esc(b.creates.map(x=>TAGS[x.tag]?L(TAGS[x.tag].name):x.tag).join("+"))):""}</span></button>`).join("");}
+    $("book").innerHTML=book.map((b,i)=>`<button class="spellchip${b.sig?" sig":""}" data-act="book" data-v="${i}" style="--elc:${b.palette?b.palette[1]:EL[b.el]?EL[b.el].c[1]:"#c9a2ff"}"><b>${esc(b.name)}</b><span>${tx("chipPower",b.power,manaFor(Object.assign({},b,{written:true}),"you"))}${b.sig?tx("chipSig",b.sig):""}${b.exploits&&b.exploits.length?tx("chipUses",esc(b.exploits.map(t=>TAGS[t]?L(TAGS[t].name):t).join("+"))):""}${b.creates&&b.creates.length?tx("chipMakes",esc(b.creates.map(x=>TAGS[x.tag]?L(TAGS[x.tag].name):x.tag).join("+"))):""}</span></button>`).join("");}
   $("bookWrap").hidden=!book.length;
   const live=canAct()&&!S.you.cast;
   for(const btn of $("book").children){const pk=book[+btn.dataset.v];btn.disabled=!live||!pk||manaFor(Object.assign({},pk,{written:true}),"you")*.35>S.you.mana;}
