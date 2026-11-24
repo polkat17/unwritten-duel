@@ -322,7 +322,9 @@ details .body b{color:var(--chalk);font-weight:500}
      from its second finishing blow on, the kill cam gives it its own title card. inscribe() keeps sig when a spell is rewritten.
    - Answering theme (MUS.answer): when the player exploits a rival's condition, the rival's motif plays mirrored on the player's horn.
      Signature echoes (sigEcho, drawLegend): casting a sig spell adds a gold ghost motion (fx field ghost = alpha) and a gold star in A.legend.
+   - Spell scars (scarFor, drawScars, A.scars): a lethal cataclysm or grand combination (combo>=2) marks the floor for the rest of the duel; at most 4.
    - Reaction codex (M.codex, renderCodex): names of reactions the player has caused; the sanctum shows the rest as silhouettes.
+   - Rival dread (DREAD, A.dread): five gold stars over the player in a won duel make the next rival enter with a DREAD line and a five-note chime.
    - Drop-in art: PNG sheets published as art/<id>.png replace the drawn
      sprites (see ART below for the frame layout). Never delete art files.
    DIRECTION FROM THE PLAYER:
@@ -348,11 +350,13 @@ details .body b{color:var(--chalk);font-weight:500}
      2. Weather duels: when both mages have a condition of their own on the field, the hall's sky visibly splits between their colours, and a grand combination that uses one condition from each side lands as a "Stolen Sky" with its own title card.
      3. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
      4. Echoes of the deep: beyond the tower, each rival returns carrying one spell from the player's own grimoire (rewritten in their element), so the deeper floors answer the player's favourite combinations with their own.
-     5. Spell scars: a lethal cataclysm or grand combination leaves a lasting pixel scar on the arena floor (scorch, frost crack, flood line, rooted earth) for the rest of the duel, so the hall remembers the biggest magic cast in it.
-     6. Rival's grudge: a rival whose condition the player has turned against them twice in one duel stops creating that condition and switches to its second element for the rest of the duel, with a line from SAY, so stealing their magic changes how they fight.
-     7. Rival dread: when the player's legend over their head reaches five gold stars (A.legend), the next rival's entrance line acknowledges it (a fifth SAY line per rival, EN+RU), so the tower hears of the player's signature magic.
+     5. Rival's grudge: a rival whose condition the player has turned against them twice in one duel stops creating that condition and switches to its second element for the rest of the duel, with a line from SAY, so stealing their magic changes how they fight.
+     6. Living grimoire: a signature spell (sig 3+) gets a tiny pixel glyph of its own motion drawn on its grimoire chip, so the player's most famous spells can be recognised at a glance.
+     7. Healing scars: a mage standing over their own spell scar (A.scars) draws a faint glow from it when they focus, so the floor of a long duel becomes a map of where each mage is strongest (visual first, at most a tiny mana bonus).
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-24",t:"Spell scars: a cataclysm or grand combination now leaves its mark on the arena floor for the rest of the duel, a smouldering scorch, a frost crack, a glinting flood line, rooted earth or a burnt-in rune, so the hall remembers the biggest magic cast in it.",ru:"Шрамы заклинаний: катаклизм или великая комбинация теперь оставляют след на полу арены до конца дуэли — тлеющий ожог, морозную трещину, блестящую линию потопа, вздыбленные корни или выжженную руну, так что зал помнит самую сильную магию, сотворённую в нём."},
+  {d:"2026-11-24",t:"The tower now hears of your legend: after a duel where five gold stars hung over your head, the next rival enters under five stars of their own and greets you with a line about your famous magic.",ru:"Башня теперь слышит о вашей легенде: после дуэли, где над вашей головой горели пять золотых звёзд, следующий соперник выходит под пятью звёздами и встречает вас словами о вашей знаменитой магии."},
   {d:"2026-11-23",t:"Signature echoes: a spell that has already ended a duel is now shadowed by a gold after-image of itself with a soft chime, and every casting hangs another gold star over your head for the rest of the duel.",ru:"Отзвук коронных заклинаний: заклинание, уже заканчивавшее дуэль, теперь сопровождает его золотой отблеск с тихим перезвоном, а каждое произнесение зажигает над вашей головой ещё одну золотую звезду до конца дуэли."},
   {d:"2026-11-23",t:"When you turn a rival's own condition against them, the music now answers with their theme turned upside down on your horn, so stealing their magic is heard as well as seen.",ru:"Когда вы обращаете условие соперника против него самого, музыка теперь отвечает его же темой, перевёрнутой вверх ногами, на вашем роге, так что кражу его магии слышно, а не только видно."},
   {d:"2026-11-22",t:"Signature spells: a grimoire spell that ends a duel now wears a gold edge and counts its finishing blows, and every time it ends another duel the kill cam announces it by name.",ru:"Коронные заклинания: заклинание из гримуара, которое заканчивает дуэль, теперь получает золотую кайму и считает свои добивающие удары, а каждый раз, когда оно заканчивает ещё одну дуэль, кадр добивания называет его по имени."},
@@ -439,6 +443,10 @@ const RU={
   "Ink Tide":"Чернильный прилив","Blank Page":"Чистый лист","Last Eclipse":"Последнее затмение","Erasure":"Стирание","Margin Ward":"Щит полей","The Final Word":"Последнее слово",
   "Spilled ink":"Пролитые чернила","Blank page":"Чистый лист","Enough. I will write you out myself.":"Довольно. Я сам вычеркну тебя.",
   "Thank you for the water.":"Спасибо за воду.","Your fire burns for me now!":"Твой огонь теперь горит за меня!","You left this for me. How kind.":"Вы оставили это мне. Как мило.",
+  "They say your spells have become legends. The tide has heard.":"Говорят, ваши заклинания стали легендой. Прилив слышал.","Five stars over your head? I'll knock them off.":"Пять звёзд над головой? Я их собью.",
+  "Your famous spell... I would love to borrow it.":"Ваше знаменитое заклинание... я бы с радостью его одолжила.","The roots whisper your name. Old trees fear little, but they listen.":"Корни шепчут твоё имя. Старые деревья мало чего боятся, но слушают.",
+  "The wind carried your legend up here before you.":"Ветер принёс твою легенду сюда раньше тебя.","I saw your legend in the embers. I did not like how it ended.":"Я видела твою легенду в углях. Мне не понравилось, чем она кончилась.",
+  "So you carry a legend. I will unwrite it.":"Значит, у тебя есть легенда. Я её сотру.",
   "Whatever you plant, I harvest.":"Что посеешь — пожну я.","I saw you build this. I saw it fall on you.":"Я видела, как ты это строишь. И как это рушится на тебя.","Your words. My spell.":"Твои слова. Моё заклинание."
 };
 const L=s=>LANG==="ru"&&RU[s]?RU[s]:s;
@@ -1559,7 +1567,7 @@ function loadArt(id){if(id in ART) return;ART[id]=null;try{const im=new Image();
 const YOU_PAL={h:"#2f7f73",H:"#1d554d",r:"#62bda7",R:"#3f8f7e",t:"#ebe6d8",s:"#e6c3a0"};
 const POS={you:{x:18,y:FLOOR-SH,flip:false},foe:{x:102,y:FLOOR-SH,flip:true}};
 function mid(who){const p=POS[who];return p.x+(p.flip?13:10);}
-const A={vt:0,tearUntil:0,slow:1,fin:null,theme:"",parts:[],fx:[],pose:{you:{},foe:{}},shake:0,mag:1,flash:0,dark:0,decals:[],legend:[],fade:{you:0,foe:0},lift:{you:0,foe:0},stars:[],n:0,scale:1,entry:null,bolts:[],rt:0,freeze:null,kill:null,frozen:false};
+const A={vt:0,tearUntil:0,slow:1,fin:null,theme:"",parts:[],fx:[],pose:{you:{},foe:{}},shake:0,mag:1,flash:0,dark:0,decals:[],scars:[],legend:[],fade:{you:0,foe:0},lift:{you:0,foe:0},stars:[],n:0,scale:1,entry:null,bolts:[],rt:0,freeze:null,kill:null,frozen:false};
 for(let i=0;i<34;i++) A.stars.push({x:(i*53+17)%W,y:(i*29+7)%54,ph:i*1.7});
 function gem(who,casting){const p=POS[who];return {x:p.x+(p.flip?3:20),y:p.y+(casting?2:7)-Math.round(A.lift[who])};}
 function chest(who){return {x:mid(who),y:POS[who].y+20-Math.round(A.lift[who])};}
@@ -1658,6 +1666,7 @@ function launch(e){
   A.fx.push({type:"motion",m,t0:now+CHARGE,dur,a:gem(e.who,true),b:self?chest(e.who):chest(o),c,s:big?4:1+tier(e.power),n:e.count||0,seed:Math.random()*1000,who:e.who,dir:e.who==="you"?1:-1});
   const sg=e.who==="you"&&e.name?(M.book||[]).find(x=>x.name===e.name&&x.sig):null;
   if(sg) sigEcho(e,m,dur,big?4:1+tier(e.power),self?chest("you"):chest(o),now);
+  if(e.lethal||e.combo>=2) scarFor(e,self?chest(e.who):chest(o),now+CHARGE+dur);
   if(e.lethal) A.fx.push({type:"cata",t0:now+CHARGE,dur:dur+500,a:gem(e.who,true),b:chest(o),c,el:e.el});
   if(big) A.dim={from:now,until:now+CHARGE+dur+300};
   setTimeout(()=>{
@@ -1693,6 +1702,43 @@ function impact(e,c){
   else if(e.t==="discover"){floatAt(72,FLOOR-44,tx("newReaction"),"heal");tone(784,1568,.6,"triangle",.08,.1);}
   else if(e.t==="wardbreak"){spark(p.x,p.y,["#ffffff","#cfe9ff"],26,.12,560);floatText(e.who,tx("wardDown"),"info");SFX.wardDown();}
 }
+/* Spell scars: a lethal cataclysm or grand combination leaves a mark on the arena floor for the rest of the duel (A.scars, drawScars):
+   scorch, frost crack, flood line, rooted earth or a burnt-in rune, picked from the reaction's lead condition or the spell's element. */
+const SCAR_OF={fire:"scorch",storm:"scorch",light:"rune",water:"flood",ice:"frost",roots:"roots",wind:"rune",shadow:"rune"};
+function scarFor(e,b,t0){
+  const lead=e.react&&e.react.lead,el=e.el;
+  let k=lead&&SCAR_OF[lead]||(el==="ember"?"scorch":el==="thorn"?"roots":el==="tide"?((e.tags||[]).includes("ice")?"frost":"flood"):"rune");
+  const c=lead&&TAGS[lead]?TAGS[lead].c:palOf(e);
+  if(A.scars.length>=4) A.scars.shift();
+  A.scars.push({k,c,t0,x:clamp(Math.round(b.x+(Math.random()*10-5)),14,W-14),seed:Math.floor(Math.random()*997)});
+}
+function drawScars(now){
+  for(const s of A.scars){
+    const k=clamp((now-s.t0)/700,0,1);if(k<=0) continue;
+    const r=(i)=>((s.seed*31+i*97)%53)/53,x=s.x,y=FLOOR+9,tw=.5+.5*Math.sin(now/300+s.seed);
+    g.globalAlpha=k;
+    if(s.k==="scorch"){
+      for(let i=0;i<9;i++){const dx=Math.round((r(i)-.5)*22),dy=Math.round(r(i+9)*5);px(x+dx-2,y+dy,4+Math.round(r(i+3)*4),1,"rgba(12,6,4,.7)");}
+      for(let i=0;i<4;i++){const dx=Math.round((r(i+20)-.5)*18),dy=Math.round(r(i+24)*5);g.globalAlpha=k*(.4+.6*Math.max(0,Math.sin(now/220+i*2+s.seed)));px(x+dx,y+dy,1,1,s.c[1]);}
+      g.globalAlpha=k;if(Math.floor(now/180+s.seed)%7===0) px(x+Math.round((r(30)-.5)*14),y-1-Math.floor(now/90)%4,1,1,"rgba(120,110,100,.6)");
+    }else if(s.k==="frost"){
+      for(let j=-1;j<=1;j+=2){let cx=x,cy=y+2;for(let i=0;i<7;i++){cx+=j*(1+Math.round(r(i+j*5+10)*2));cy+=Math.round(r(i+j*3+17)*2)-1;cy=clamp(cy,y,y+6);px(cx,cy,1,1,i%2?s.c[1]:s.c[0]);if(i===3) px(cx,cy+1,1,2,s.c[2]);}}
+      g.globalAlpha=k*(.3+.5*tw);px(x,y+2,1,1,"#ffffff");glow(x,y+2,4,s.c[1],.05);
+    }else if(s.k==="flood"){
+      for(let i=-16;i<=16;i++){const yy=y+3+Math.round(Math.sin(i/3+s.seed)*1);px(x+i,yy,1,1,Math.abs(i)>12?s.c[2]:s.c[1]);}
+      const sh=Math.floor(now/90+s.seed)%40-20;if(Math.abs(sh)<=16){g.globalAlpha=k*.8;px(x+sh,y+3+Math.round(Math.sin(sh/3+s.seed)),2,1,s.c[0]);}
+      g.globalAlpha=k*.35;px(x-14,y+5,28,1,s.c[2]);
+    }else if(s.k==="roots"){
+      for(let j=0;j<4;j++){const bx=x+Math.round((r(j)-.5)*20),h=3+Math.round(r(j+4)*4);for(let i=0;i<h;i++) px(bx+Math.round(Math.sin(i*.9+j+s.seed)*1),y+2-i,1,1,i<h-1?s.c[2]:s.c[1]);px(bx-1,y+3,3,1,s.c[2]);}
+      g.globalAlpha=k*(.5+.5*tw);px(x+Math.round((r(9)-.5)*16),y-2,1,1,s.c[0]);
+    }else{
+      for(let a=0;a<24;a++){if(a%4===3) continue;const an=a/24*Math.PI*2+s.seed;px(x+Math.cos(an)*9,y+3+Math.sin(an)*2,1,1,s.c[2]);}
+      g.globalAlpha=k*(.35+.45*tw);px(x-1,y+2,3,1,s.c[1]);px(x,y+1,1,3,s.c[1]);glow(x,y+3,6,s.c[1],.04);
+    }
+    if(k<1){g.globalAlpha=(1-k)*.8;glow(x,y+3,10,s.c[0],.25);}
+    g.globalAlpha=1;
+  }
+}
 const FREEZE=calm?250:750;
 /* The batch that ends the duel: slow motion, a letterbox and a caption; impact() then holds the frame. */
 function killCam(c,sig){
@@ -1719,6 +1765,7 @@ function sigEcho(e,m,dur,s,b,now){
   const d=calm?0:160;
   A.fx.push({type:"motion",m,t0:now+CHARGE+d,dur,a:gem("you",true),b,c:GOLD,s:Math.max(1,s-1),n:e.count||0,seed:Math.random()*1000,who:"you",dir:1,ghost:.42});
   if(A.legend.length<8) A.legend.push({t0:now+CHARGE+dur});
+  if(A.legend.length>=5) A.dread=true;
   tone(784,1568,.6,"triangle",.035,(CHARGE+d)*(A.slow||1)/1000);
 }
 function drawLegend(now){
@@ -2263,7 +2310,7 @@ function frame(now){
   A.dark+=(deep-A.dark)*.04;
   if(A.dark>.01){g.fillStyle="rgba(3,3,10,"+A.dark.toFixed(3)+")";g.fillRect(0,0,W,H);}
   for(const d of A.decals){px(d.x,FLOOR+3+d.o,3,1,"rgba(0,0,0,.55)");px(d.x+1,FLOOR+2+d.o,1,1,d.c);}
-  if(S.phase!=="home") drawField(now);
+  if(S.phase!=="home"){drawScars(now);drawField(now);}
   if(S.phase==="duel") drawLegend(now);
   if(S.phase==="home"){
     drawMage("you",now);
@@ -2298,13 +2345,21 @@ const SAY={
   kesh:["I have seen how you burn.","Ash remembers everything.","This was not in the embers.","I saw you build this. I saw it fall on you."],
   unwritten:["You wrote your way here. Now be erased.","Every word of yours, unwritten.","Then write the ending yourself.","Your words. My spell.","Enough. I will write you out myself."]
 };
+/* Rival dread: once five gold stars have hung over the player in a duel they won, the next rival opens with DREAD instead. */
+const DREAD={
+  varn:"They say your spells have become legends. The tide has heard.",brakk:"Five stars over your head? I'll knock them off.",
+  moth:"Your famous spell... I would love to borrow it.",hemlock:"The roots whisper your name. Old trees fear little, but they listen.",
+  vane:"The wind carried your legend up here before you.",kesh:"I saw your legend in the embers. I did not like how it ended.",
+  unwritten:"So you carry a legend. I will unwrite it."
+};
 function arrive(){
-  const R=rival(),line=L((SAY[R.id]||[])[0]),tok=A.entry={t0:A.vt};
-  A.decals=[];A.legend=[];
+  const R=rival(),dread=A.dread&&DREAD[R.id],line=L(dread||(SAY[R.id]||[])[0]),tok=A.entry={t0:A.vt};
+  A.decals=[];A.scars=[];A.legend=[];A.dread=false;
   for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
   const d=document.createElement("div");d.className="arrive";
-  d.innerHTML=`<small class="px">${esc(floorName(S.floor)+(S.daily?" · "+tx("dailyTag"):""))}</small><b>${esc(L(R.name))}</b><i>${esc(L(R.epithet))}</i>`;
+  d.innerHTML=`<small class="px">${esc(floorName(S.floor)+(S.daily?" · "+tx("dailyTag"):""))}</small><b>${esc(L(R.name))}</b><i>${esc(L(R.epithet))}</i>${dread?'<small class="px" style="color:#ffd27a">★ ★ ★ ★ ★</small>':""}`;
   $("floats").appendChild(d);SFX.arrive(R.boss);
+  if(dread) [0,1,2,3,4].forEach(i=>tone(784*Math.pow(1.122,i),1568,.5,"triangle",.03,.35+i*.12));
   setTimeout(()=>{d.remove();if(A.entry===tok){A.entry=null;say(line);renderStatic();}},ENTRY_MS);
 }
 
@@ -2455,14 +2510,14 @@ async function saveVideo(){
 /* ---------- flow ---------- */
 function duelOver(){
   A.slow=1;
-  if(S.phase==="dead") SFX.lose();else{SFX.win();say(L((SAY[rival().id]||[])[2]));}
+  if(S.phase==="dead"){SFX.lose();A.dread=false;}else{SFX.win();say(L((SAY[rival().id]||[])[2]));}
   T.composing=false;$("spell").blur();A.lastFloor=S.floor;
   saveMeta();renderStatic();
   setTimeout(()=>{if(!A.fin&&S.phase!=="duel"&&S.phase!=="home"&&S.phase!=="rest") startFinale();},1600);
 }
 /* The shrine halfway up: the hall dims to the sanctum's moonlight, the rival's place holds an altar (drawShrine). */
 function restView(){
-  killOff();A.slow=1;T.paused=false;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";A.decals=[];A.legend=[];A.restT0=A.vt;
+  killOff();A.slow=1;T.paused=false;T.rep=[];T.lastSnap=null;T.video=null;T.vidNote="";A.decals=[];A.scars=[];A.legend=[];A.restT0=A.vt;
   for(const o of document.querySelectorAll(".arrive,.say")) o.remove();
   const d=document.createElement("div");d.className="arrive";
   d.innerHTML=`<small class="px">${esc(floorName(S.floor))}</small><b>${esc(tx("shrineName"))}</b><i>${esc(tx("shrineSub"))}</i>`;
