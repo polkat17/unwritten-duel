@@ -155,6 +155,8 @@ textarea:disabled{opacity:.5}
 .spellchip.sig{border-color:var(--brass);box-shadow:inset 0 0 0 1px rgba(255,210,122,.35),0 0 6px rgba(255,210,122,.25)}
 .spellchip.sig b{color:#ffd27a}
 .spellchip.sig b::before{content:"\2726 ";color:var(--brass)}
+.spellchip.glyph b::before{content:none}
+.spellchip b svg.glyph{display:inline-block;vertical-align:-2px;margin-right:6px;image-rendering:pixelated;filter:drop-shadow(0 0 2px rgba(255,210,122,.55))}
 .killcap.sig{color:#fff1a8;letter-spacing:.06em}
 .sigils{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .sigils button{background:transparent;border:1px dashed var(--line);border-radius:2px;padding:7px 4px;cursor:pointer;color:var(--dust);display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
@@ -325,6 +327,7 @@ details .body b{color:var(--chalk);font-weight:500}
    - Spell scars (scarFor, drawScars, A.scars): a lethal cataclysm or grand combination (combo>=2) marks the floor for the rest of the duel; at most 4.
    - Reaction codex (M.codex, renderCodex): names of reactions the player has caused; the sanctum shows the rest as silhouettes.
    - Rival dread (DREAD, A.dread): five gold stars over the player in a won duel make the next rival enter with a DREAD line and a five-note chime.
+   - Living grimoire (GLYPHS, glyphOf): a spell with sig 3+ shows an 8x8 pixel glyph of its MOTION on its chip in its own palette.
    - Drop-in art: PNG sheets published as art/<id>.png replace the drawn
      sprites (see ART below for the frame layout). Never delete art files.
    DIRECTION FROM THE PLAYER:
@@ -351,10 +354,11 @@ details .body b{color:var(--chalk);font-weight:500}
      3. Altar visions: at the Moonlit Altar the cold flame shows, in drifting pixel smoke, a silhouette of the conditions the coming rival's book likes to create, so the player can write a counter-spell before the duel begins.
      4. Echoes of the deep: beyond the tower, each rival returns carrying one spell from the player's own grimoire (rewritten in their element), so the deeper floors answer the player's favourite combinations with their own.
      5. Rival's grudge: a rival whose condition the player has turned against them twice in one duel stops creating that condition and switches to its second element for the rest of the duel, with a line from SAY, so stealing their magic changes how they fight.
-     6. Living grimoire: a signature spell (sig 3+) gets a tiny pixel glyph of its own motion drawn on its grimoire chip, so the player's most famous spells can be recognised at a glance.
-     7. Healing scars: a mage standing over their own spell scar (A.scars) draws a faint glow from it when they focus, so the floor of a long duel becomes a map of where each mage is strongest (visual first, at most a tiny mana bonus).
+     6. Healing scars: a mage standing over their own spell scar (A.scars) draws a faint glow from it when they focus, so the floor of a long duel becomes a map of where each mage is strongest (visual first, at most a tiny mana bonus).
+     7. Glyph in the sky: when a spell with a living-grimoire glyph (glyphOf) is cast, its 8x8 glyph flashes large over the caster for a beat in drawLegend, so famous spells announce themselves in the arena too.
    ===================================================================== */
 const CHANGELOG=[
+  {d:"2026-11-25",t:"Living grimoire: a spell that has ended three duels or more now carries a small glowing pixel glyph of its own animation on its grimoire chip, so your most famous spells stand out at a glance.",ru:"Живой гримуар: заклинание, закончившее три дуэли или больше, теперь носит на своей карточке в гримуаре маленький светящийся пиксельный знак своей анимации, чтобы ваши самые знаменитые заклинания было видно сразу."},
   {d:"2026-11-24",t:"Spell scars: a cataclysm or grand combination now leaves its mark on the arena floor for the rest of the duel, a smouldering scorch, a frost crack, a glinting flood line, rooted earth or a burnt-in rune, so the hall remembers the biggest magic cast in it.",ru:"Шрамы заклинаний: катаклизм или великая комбинация теперь оставляют след на полу арены до конца дуэли — тлеющий ожог, морозную трещину, блестящую линию потопа, вздыбленные корни или выжженную руну, так что зал помнит самую сильную магию, сотворённую в нём."},
   {d:"2026-11-24",t:"The tower now hears of your legend: after a duel where five gold stars hung over your head, the next rival enters under five stars of their own and greets you with a line about your famous magic.",ru:"Башня теперь слышит о вашей легенде: после дуэли, где над вашей головой горели пять золотых звёзд, следующий соперник выходит под пятью звёздами и встречает вас словами о вашей знаменитой магии."},
   {d:"2026-11-23",t:"Signature echoes: a spell that has already ended a duel is now shadowed by a gold after-image of itself with a soft chime, and every casting hangs another gold star over your head for the rest of the duel.",ru:"Отзвук коронных заклинаний: заклинание, уже заканчивавшее дуэль, теперь сопровождает его золотой отблеск с тихим перезвоном, а каждое произнесение зажигает над вашей головой ещё одну золотую звезду до конца дуэли."},
@@ -1299,6 +1303,35 @@ async function castWritten(){
     }
   }catch(e){T.note={warn:true,msg:copyFor(e)+tx("stillWork")};}
   T.busy=false;if(T.needCode) renderStatic();renderLive(true);
+}
+/* Living grimoire (glyphOf): a signature spell with 3+ finishing blows shows an 8x8 pixel glyph of its MOTION on its chip,
+   drawn in its own three colours (1, 2, 3 = palette[0..2]). */
+const GLYPHS={
+  bolt:["........","....33..","..2233..","11222233","11222233","..2233..","....33..","........"],
+  volley:["......3.","1.22.33.","........","..1.2233","........","1.22.33.","......3.","........"],
+  beam:["........","........","3.......","22222223","33333333","22222223","3.......","........"],
+  lightning:["...333..","..33....",".22.....","..222...","....22..","...2....","..1.....",".1......"],
+  meteor:["1.......",".12.....","..1222..","...2332.","...2332.","....22..","........","........"],
+  rain:["2.3..2.3","........",".2..3..2","........","3..2.3..","........",".1..1..1","11111111"],
+  wave:["........","....33..","...3223.","..322..2",".3221...","32211...","22111111","11111111"],
+  pillar:["..2332..","..2332..","..2332..","..1331..","..1331..","..1221..",".112211.","11111111"],
+  spikes:["........","...3....","...2..3.",".3.2..2.",".2.21.2.","12121212","11111111","........"],
+  vortex:["..2222..",".2....2.","2..33..2","2.3..3.2","2.3.13.2","2..3..2.",".2....2.","..2222.."],
+  chains:["11....11",".12..21.","..2332..","...33...","...33...","..2332..",".12..21.","11....11"],
+  orb:["..2222..",".233332.","23311332","23311332","23333332","22333322",".222222.","..2222.."],
+  burst:["3..3..3.",".3.2.3..","..222...","3221223.","..222...",".3.2.3..","3..3..3.","........"],
+  curse:["..1111..",".12..21.","1.3..3.1","1......1",".1.22.1.","..1..1..",".1.11.1.","1......1"],
+  swarm:[".3....3.","3.3..3.3","........","..3..2..",".2.2....","......3.","3...3.3.",".3......"],
+  wall:["2.2.2.2.","22222222","21212121","22222222","12121212","22222222","21212121","22222222"],
+  dome:["...33...",".332233.",".2....2.","2......2","3......3","2......2","2......2","11111111"],
+  aura:["...3....",".3...3..","..222...",".2.1.2..","3.111.3.",".2.1.2..","..222...",".3...3.."]
+};
+function glyphOf(b){
+  if(!b||(b.sig||0)<3) return "";
+  const rows=GLYPHS[b.motion]||GLYPHS.orb,ok=c=>/^#[0-9a-f]{3,8}$/i.test(c||""),fb=EL[b.el]?EL[b.el].c:["#6a4c9c","#c9a2ff","#fff1ff"];
+  const pal=[0,1,2].map(i=>b.palette&&ok(b.palette[i])?b.palette[i]:fb[i]||"#c9a2ff");
+  let r="";rows.forEach((row,y)=>{for(let x=0;x<8;x++){const k=row.charCodeAt(x)-49;if(k>=0&&k<3) r+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${pal[k]}"/>`;}});
+  return `<svg class="glyph" viewBox="0 0 8 8" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
 }
 function inscribe(pk){
   const keep={};for(const k of ["name","el","shape","form","motion","palette","count","power","damage","absorb","heal","drain","breaks","creates","exploits","impact","text","written","insp","lethal","lasting"]) keep[k]=pk[k];
@@ -2624,7 +2657,7 @@ function renderLive(force){
   nt.className="note"+(T.note&&T.note.warn&&!T.resolving&&!chan?" warn":"");
   const book=M.book||[],bk=book.map(b=>b.name+(b.sig||0)+manaFor(Object.assign({},b,{written:true}),"you")).join("|");
   if(bk!==T.bookKey){T.bookKey=bk;
-    $("book").innerHTML=book.map((b,i)=>`<button class="spellchip${b.sig?" sig":""}" data-act="book" data-v="${i}" style="--elc:${b.palette?b.palette[1]:EL[b.el]?EL[b.el].c[1]:"#c9a2ff"}"><b>${esc(b.name)}</b><span>${tx("chipPower",b.power,manaFor(Object.assign({},b,{written:true}),"you"))}${b.sig?tx("chipSig",b.sig):""}${b.exploits&&b.exploits.length?tx("chipUses",esc(b.exploits.map(t=>TAGS[t]?L(TAGS[t].name):t).join("+"))):""}${b.creates&&b.creates.length?tx("chipMakes",esc(b.creates.map(x=>TAGS[x.tag]?L(TAGS[x.tag].name):x.tag).join("+"))):""}</span></button>`).join("");}
+    $("book").innerHTML=book.map((b,i)=>`<button class="spellchip${b.sig?" sig":""}${(b.sig||0)>=3?" glyph":""}" data-act="book" data-v="${i}" style="--elc:${b.palette?b.palette[1]:EL[b.el]?EL[b.el].c[1]:"#c9a2ff"}"><b>${glyphOf(b)}${esc(b.name)}</b><span>${tx("chipPower",b.power,manaFor(Object.assign({},b,{written:true}),"you"))}${b.sig?tx("chipSig",b.sig):""}${b.exploits&&b.exploits.length?tx("chipUses",esc(b.exploits.map(t=>TAGS[t]?L(TAGS[t].name):t).join("+"))):""}${b.creates&&b.creates.length?tx("chipMakes",esc(b.creates.map(x=>TAGS[x.tag]?L(TAGS[x.tag].name):x.tag).join("+"))):""}</span></button>`).join("");}
   $("bookWrap").hidden=!book.length;
   const live=canAct()&&!S.you.cast;
   for(const btn of $("book").children){const pk=book[+btn.dataset.v];btn.disabled=!live||!pk||manaFor(Object.assign({},pk,{written:true}),"you")*.35>S.you.mana;}
